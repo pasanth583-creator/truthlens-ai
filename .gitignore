@@ -1,0 +1,46 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SQLite and local database persistence
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+
+# Runtime uploads, test/scratch artifacts, and training checkpoint outputs
+uploads/
+results/
+scratch/
+
+# Application and runtime logs
+*.log
+logs/
+
+# Datasets
+data/raw/
+data/processed/
+data/processed_backup_phase3_invalid/
+
+# Large model files & binary weights
+*.safetensors
+*.bin
+*.joblib
+*.pkl
+
+# Tokenizer vocabulary artifacts
+models/production/tokenizer.json
+models/transformer/tokenizer.json

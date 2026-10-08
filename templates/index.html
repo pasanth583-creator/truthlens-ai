@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens AI — Explainable Fact-Checking & News Verification</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
+        header { border-bottom: 2px solid #eaeaea; padding-bottom: 20px; margin-bottom: 30px; }
+        h1 { margin: 0 0 10px 0; color: #111; }
+        .tagline { color: #666; font-size: 1.1em; }
+        .btn { display: inline-block; background: #0066cc; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+        .btn:hover { background: #0052a3; }
+        .card { background: #f9f9f9; border: 1px solid #e1e1e1; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .disclaimer { font-size: 0.9em; color: #777; margin-top: 40px; border-top: 1px solid #eaeaea; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TruthLens AI</h1>
+        <div class="tagline">Explainable NLP Fake News Detection & Real-Time Evidence Verification</div>
+    </header>
+
+    <main>
+        <div class="card">
+            <h2>Verify Claims & Articles</h2>
+            <p>TruthLens AI integrates a fine-tuned Transformer model (DistilBERT) with token-level Integrated Gradients explainability and live authoritative evidence retrieval.</p>
+            <p>Our dual-pipeline system independently evaluates linguistic patterns and corroborating open-web facts.</p>
+            <a href="/analyze" class="btn" id="start-analysis-btn">Start Claim Analysis &rarr;</a>
+            <a href="/history" class="btn" id="view-history-btn" style="background: #4b5563; margin-left: 10px;">View History &rarr;</a>
+        </div>
+
+        <div class="card">
+            <h3>API Access</h3>
+            <p>Developer and automated analysis endpoints are available:</p>
+            <ul>
+                <li><code>GET /api/health</code> — Check backend engine and model status</li>
+                <li><code>POST /api/analyze</code> — Submit JSON payload <code>{"text": "..."}</code> for full verification analysis</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer class="disclaimer">
+        <p><strong>Responsible AI Notice:</strong> Model predictions reflect learned training associations. Retrieved evidence is sourced independently from authoritative archives. Unverified claims indicate insufficient external corroboration.</p>
+    </footer>
+</body>
+</html>

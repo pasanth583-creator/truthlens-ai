@@ -1,0 +1,28 @@
+{
+    "selected_model": "distilbert-base-uncased",
+    "architecture": "DistilBertForSequenceClassification",
+    "classes": [
+        "False",
+        "Misleading",
+        "Reliable"
+    ],
+    "selection_metric": "Validation Macro F1",
+    "validation_macro_f1": 0.4102,
+    "test_accuracy": 0.466,
+    "test_macro_f1": 0.3933,
+    "test_weighted_f1": 0.4341,
+    "training_sample_count": 2000,
+    "validation_sample_count": 500,
+    "test_sample_count": 500,
+    "max_sequence_length": 128,
+    "batch_size": 8,
+    "epochs": 2,
+    "learning_rate": 5e-05,
+    "selection_statement": "DistilBERT is selected as the production NLP model for the prototype because it achieved the highest validation Macro F1 in the controlled experiment. However, its performance should be considered provisional because the transformer was trained on a CPU-constrained subset.",
+    "limitations": [
+        "Trained on a CPU-constrained random subset of 2,000 samples out of the 31,540 available training samples.",
+        "Sequence length truncated to 128 tokens.",
+        "Minority class (False) exhibits low recall (0.0909) under 2-epoch CPU fine-tuning.",
+        "Lexical pattern classification only; claims require downstream retrieval and verification."
+    ]
+}

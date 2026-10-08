@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Claim — TruthLens AI</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
+        header { border-bottom: 2px solid #eaeaea; padding-bottom: 15px; margin-bottom: 25px; }
+        h1 { margin: 0 0 5px 0; }
+        .back-link { color: #0066cc; text-decoration: none; font-size: 0.9em; }
+        textarea { width: 100%; box-sizing: border-box; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; min-height: 140px; font-family: inherit; }
+        .btn-submit { background: #0066cc; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 15px; }
+        .btn-submit:hover { background: #0052a3; }
+        .error-alert { background: #fde8e8; border-left: 4px solid #e02424; color: #9b1c1c; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; }
+        .samples { margin-top: 30px; border-top: 1px solid #eaeaea; padding-top: 15px; font-size: 0.9em; color: #555; }
+        .sample-btn { background: #eee; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin: 4px 2px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="back-link">&larr; Back to Home</a>
+        <a href="/history" class="back-link" style="margin-left: 15px;">Analysis History</a>
+        <h1>Submit Text for Verification</h1>
+    </header>
+
+    <main>
+        {% if error %}
+        <div class="error-alert" id="validation-error-area">
+            <strong>Validation Error:</strong> {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/analyze" method="POST">
+            <label for="text" style="display: block; font-weight: bold; margin-bottom: 8px;">Enter Claim, Headline, or News Article Excerpt:</label>
+            <textarea id="text" name="text" placeholder="Type or paste the statement to analyze (e.g., 'Scientific studies show that vaccines cause autism in children')...">{{ text or '' }}</textarea>
+            
+            <button type="submit" class="btn-submit" id="analyze-submit-btn">Run Analysis &rarr;</button>
+        </form>
+
+        <div class="samples">
+            <strong>Try an example:</strong><br>
+            <button type="button" class="sample-btn" onclick="document.getElementById('text').value='Scientific studies show that vaccines cause autism in children.'">Vaccine Claim</button>
+            <button type="button" class="sample-btn" onclick="document.getElementById('text').value='George Washington was the first President of the United States.'">George Washington</button>
+            <button type="button" class="sample-btn" onclick="document.getElementById('text').value='Romneycare has killed 18,000 Massachusetts jobs.'">Romneycare</button>
+        </div>
+    </main>
+</body>
+</html>

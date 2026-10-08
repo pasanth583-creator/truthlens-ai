@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis History — TruthLens AI</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #222; }
+        header { border-bottom: 2px solid #eaeaea; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; }
+        .nav-link { color: #0066cc; text-decoration: none; margin-left: 15px; font-size: 0.95em; }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .history-table th, .history-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .history-table th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-table tr:hover { background: #f9fafb; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }
+        .badge-false { background: #fee2e2; color: #991b1b; }
+        .badge-misleading { background: #fef3c7; color: #92400e; }
+        .badge-reliable { background: #d1fae5; color: #065f46; }
+        .status-tag { font-size: 0.85em; font-weight: 600; color: #4b5563; }
+        .status-conflict { color: #b45309; }
+        .view-btn { color: #0066cc; text-decoration: none; font-weight: 600; }
+        .view-btn:hover { text-decoration: underline; }
+        .empty-state { text-align: center; padding: 50px 20px; color: #6b7280; background: #f9fafb; border-radius: 8px; margin-top: 20px; }
+        .disclaimer { font-size: 0.85em; color: #6b7280; border-top: 1px solid #eaeaea; padding-top: 15px; margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Analysis History</h1>
+            <small style="color: #6b7280;">Stored verification reports (most recent first)</small>
+        </div>
+        <nav>
+            <a href="/analyze" class="nav-link">+ New Analysis</a>
+            <a href="/" class="nav-link">Home</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if history_items %}
+        <table class="history-table" id="history-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 150px;">Timestamp</th>
+                    <th>Claim Excerpt</th>
+                    <th style="width: 110px;">Prediction</th>
+                    <th style="width: 90px;">Confidence</th>
+                    <th style="width: 140px;">Verification</th>
+                    <th style="width: 80px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history_items %}
+                <tr>
+                    <td>#{{ item.id }}</td>
+                    <td style="font-size: 0.85em; color: #6b7280;">{{ item.created_at }}</td>
+                    <td title="{{ item.claim_full }}">{{ item.claim_short }}</td>
+                    <td>
+                        <span class="badge badge-{{ item.predicted_label|lower }}">{{ item.predicted_label }}</span>
+                    </td>
+                    <td><strong>{{ "%.1f"|format(item.confidence * 100) }}%</strong></td>
+                    <td>
+                        <span class="status-tag {% if item.conflict_detected %}status-conflict{% endif %}">
+                            {% if item.conflict_detected %}⚠️ {% endif %}{{ item.verification_status }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/history/{{ item.id }}" class="view-btn">View &rarr;</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <h3>No Analyses Recorded Yet</h3>
+            <p>Submit your first claim or news excerpt to see persisted verification reports here.</p>
+            <a href="/analyze" style="display: inline-block; background: #0066cc; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 10px;">Start First Analysis &rarr;</a>
+        </div>
+        {% endif %}
+    </main>
+
+    <footer class="disclaimer">
+        <p><strong>Note:</strong> History records are stored securely in the local SQLite database. Old analyses are rendered directly from stored verification records without rerunning inference.</p>
+    </footer>
+</body>
+</html>
