@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}System Architecture & Methodology — TruthLens AI{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin-top: 2.5rem; margin-bottom: 4rem;">
+  <div class="card-header" style="border: none; padding-bottom: 0; margin-bottom: 2rem;">
+    <div>
+      <h1 style="font-size: 2.2rem; margin-bottom: 0.35rem;">System Architecture & Methodology</h1>
+      <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0;">
+        How TruthLens AI reconciles deep NLP language modeling with external open-web fact verification.
+      </p>
+    </div>
+  </div>
+
+  <!-- Key Architecture Modules -->
+  <div class="card">
+    <h2 class="card-title">
+      <span>⚙️</span>
+      <span>1. Transformer Language Model (DistilBERT)</span>
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      At the classification core is a fine-tuned <code>distilbert-base-uncased</code> transformer model trained across multi-domain datasets (including benchmark ISOT and LIAR corpora). The classifier predicts three veracity categories:
+    </p>
+    <ul style="margin-left: 1.5rem; color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+      <li><strong style="color: var(--color-reliable);">Reliable:</strong> Factually aligned or standard journalistic reporting characteristics.</li>
+      <li><strong style="color: var(--color-misleading);">Misleading:</strong> Exaggerated, context-lacking, or selective claims.</li>
+      <li><strong style="color: var(--color-false);">False:</strong> Fabricated statements or demonstrably refuted claims.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">
+      <span>🧠</span>
+      <span>2. Explainable AI (Integrated Gradients)</span>
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      Unlike black-box classifiers that output an opaque confidence score, TruthLens AI uses <strong>Integrated Gradients</strong> (Sundararajan et al., 2017) to attribute prediction scores back to individual input tokens and phrases.
+    </p>
+    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0;">
+      This highlights specific linguistic cues that pulled the model toward or away from a given veracity class, providing full interpretive transparency.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">
+      <span>🌐</span>
+      <span>3. Live Evidence Retrieval & Fact-Checking</span>
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      Language models alone can hallucinate or rely on outdated parameters. TruthLens AI decouples linguistic pattern detection from factual verification by querying live, authoritative external archives:
+    </p>
+    <ul style="margin-left: 1.5rem; color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0;">
+      <li><strong>Wikipedia Public API:</strong> Extracts encyclopedic fact summaries and context citations.</li>
+      <li><strong>Google Fact Check Tools API:</strong> Queries ClaimReview markup published by accredited fact-checkers worldwide.</li>
+      <li><strong>Strict Non-Hallucination Policy:</strong> The engine never invents URLs or synthesizes fake source citations. When evidence is insufficient, it explicitly reports <em>INSUFFICIENT EVIDENCE</em>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">
+      <span>⚖️</span>
+      <span>4. Dual-Signal Verification & Conflict Detection</span>
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      The verification engine synthesizes both signals:
+    </p>
+    <ul style="margin-left: 1.5rem; color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+      <li><strong>Signal A:</strong> Model prediction and token attributions (style and linguistic consistency).</li>
+      <li><strong>Signal B:</strong> External evidence retrieval (authoritative corroboration or refutation).</li>
+    </ul>
+    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0;">
+      When the two signals diverge (e.g., a claim written in authoritative style that is factually false), TruthLens AI flags a <strong>Conflicting Signals Alert</strong>, ensuring external facts always supersede internal model confidence.
+    </p>
+  </div>
+
+  <!-- Responsible AI Notice -->
+  <div class="alert alert-warning" role="alert" style="margin-top: 2rem;">
+    <span style="font-size: 1.5rem;">🛡️</span>
+    <div>
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.25rem; color: #fef3c7;">Responsible AI & Human-in-the-Loop Statement</h3>
+      <p style="font-size: 0.9rem; color: #fef3c7; margin-bottom: 0;">
+        TruthLens AI is designed as an explainable <strong>decision-support system</strong> for journalists, researchers, and citizens. Model predictions and retrieved evidence should always be reviewed critically by human decision-makers before drawing final conclusions.
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 2.5rem;">
+    <a href="/analyze" class="btn btn-primary">
+      <span>Try Claim Analyzer</span>
+      <span>&rarr;</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

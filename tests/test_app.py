@@ -29,20 +29,28 @@ class TestAppRoutes(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"TruthLens AI", response.data)
-        self.assertIn(b"Start Claim Analysis", response.data)
+        self.assertIn(b"See Beyond the Claim", response.data)
+        self.assertIn(b"Analyze a Claim", response.data)
 
     def test_get_analyze_route(self):
         """GET /analyze should render the analysis form with 200 OK."""
         response = self.client.get("/analyze")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Submit Text for Verification", response.data)
+        self.assertIn(b"Analyze a Claim", response.data)
         self.assertIn(b"<textarea", response.data)
+
+    def test_about_route(self):
+        """GET /about should render about.html with 200 OK."""
+        response = self.client.get("/about")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"System Architecture", response.data)
+        self.assertIn(b"Responsible AI", response.data)
 
     def test_post_analyze_empty_input(self):
         """POST /analyze with empty input should return 400 and validation message."""
         response = self.client.post("/analyze", data={"text": "   "})
         self.assertEqual(response.status_code, 400)
-        self.assertIn(b"Validation Error", response.data)
+        self.assertIn(b"Validation", response.data)
 
     def test_post_analyze_too_short(self):
         """POST /analyze with < 5 characters should return 400."""
@@ -69,7 +77,7 @@ class TestAppRoutes(unittest.TestCase):
         self.assertEqual(result_page.status_code, 200)
         self.assertIn(b"Verification Report", result_page.data)
         self.assertIn(b"Tennessee students", result_page.data)
-        self.assertIn(b"Final Assessment", result_page.data)
+        self.assertIn(b"Final Verification Assessment", result_page.data)
 
     def test_view_result_not_found(self):
         """GET /result/<invalid_id> should return 404."""
@@ -91,7 +99,7 @@ class TestAppRoutes(unittest.TestCase):
         response = self.client.get("/history")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Analysis History", response.data)
-        self.assertIn(b"No Analyses Recorded Yet", response.data)
+        self.assertIn(b"No Verification Records Found", response.data)
 
     def test_history_ordering_and_content(self):
         """GET /history displays records ordered newest first with summary attributes."""

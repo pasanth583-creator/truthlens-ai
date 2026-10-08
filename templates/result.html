@@ -1,119 +1,231 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification Result — TruthLens AI</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
-        header { border-bottom: 2px solid #eaeaea; padding-bottom: 15px; margin-bottom: 25px; }
-        .back-link { color: #0066cc; text-decoration: none; font-size: 0.9em; margin-right: 15px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.9em; text-transform: uppercase; }
-        .badge-false { background: #fee2e2; color: #991b1b; }
-        .badge-misleading { background: #fef3c7; color: #92400e; }
-        .badge-reliable { background: #d1fae5; color: #065f46; }
-        .badge-supporting { background: #d1fae5; color: #065f46; }
-        .badge-contradicting { background: #fee2e2; color: #991b1b; }
-        .badge-insufficient { background: #e5e7eb; color: #374151; }
-        .card { background: #f9f9f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .conflict-box { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 25px; color: #92400e; }
-        .prob-bar-container { margin: 8px 0; }
-        .prob-bar { height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
-        .prob-fill { height: 100%; background: #0066cc; }
-        .phrase-tag { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; margin: 3px; font-size: 0.85em; }
-        .phrase-oppose { background: #fee2e2; color: #991b1b; }
-        .source-item { border-left: 3px solid #0066cc; padding-left: 12px; margin-bottom: 14px; }
-        .disclaimer { font-size: 0.85em; color: #6b7280; border-top: 1px solid #eaeaea; padding-top: 15px; margin-top: 30px; }
-    </style>
-</head>
-<body>
-    <header>
-        <a href="/analyze" class="back-link">&larr; Analyze Another Claim</a>
-        <a href="/history" class="back-link">History</a>
-        <a href="/" class="back-link">Home</a>
-        <h1>Verification Report</h1>
-    </header>
+{% extends "base.html" %}
 
-    <main>
-        {% if analysis.verification.conflict_detected %}
-        <div class="conflict-box">
-            <strong>⚠️ CONFLICTING SIGNALS DETECTED</strong><br>
-            The classifier predicted <em>{{ analysis.prediction.label }}</em> based on writing style, but external authoritative evidence indicates <em>{{ analysis.evidence.status|upper }}</em>. External facts supersede model predictions.
+{% block title %}Verification Report — TruthLens AI{% endblock %}
+
+{% block content %}
+<div class="container result-container">
+  <!-- Top Navigation / Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/analyze" class="btn btn-secondary btn-sm">&larr; Analyze Another Claim</a>
+      <a href="/history" class="btn btn-secondary btn-sm">History Logs</a>
+    </div>
+    {% if analysis.id %}
+    <span style="font-size: 0.88rem; color: var(--text-muted); font-family: monospace;">
+      Analysis Record #{{ analysis.id }} &bull; {{ analysis.created_at }}
+    </span>
+    {% endif %}
+  </div>
+
+  <!-- Status / Verdict Banner -->
+  {% set label_lower = analysis.prediction.label|lower %}
+  {% set is_conflict = analysis.verification.conflict_detected %}
+  
+  <div class="verdict-banner {% if is_conflict %}conflict{% elif label_lower == 'reliable' %}reliable{% elif label_lower == 'false' %}false{% elif label_lower == 'misleading' %}misleading{% else %}unverified{% endif %}">
+    <div>
+      <div style="font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.35rem; opacity: 0.85;">
+        {% if is_conflict %}⚠️ Warning &bull; Divergent Findings{% else %}Final Verification Assessment{% endif %}
+      </div>
+      <h1 class="verdict-heading" style="margin: 0;">{{ analysis.verification.result }}</h1>
+      <p class="verdict-subtext">
+        {% if is_conflict %}
+          External authoritative facts conflict with linguistic model prediction.
+        {% else %}
+          Dual-signal synthesis across transformer classification and live evidence retrieval.
+        {% endif %}
+      </p>
+    </div>
+    
+    <div>
+      <span class="badge badge-{% if is_conflict %}conflict{% else %}{{ label_lower }}{% endif %}" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+        {% if is_conflict %}⚡ CONFLICT DETECTED{% else %}{{ analysis.prediction.label }}{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Conflicting Signals Notice Box -->
+  {% if is_conflict %}
+  <div class="alert alert-conflict" role="alert">
+    <span style="font-size: 1.4rem;">⚡</span>
+    <div>
+      <strong>Conflicting Signals Alert:</strong>
+      The classifier predicted <em>{{ analysis.prediction.label }}</em> based on writing style, but external authoritative evidence indicates <em>{{ analysis.evidence.status|upper }}</em>. Review the external evidence carefully below; authoritative facts supersede model predictions.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Analyzed Claim Box -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <span>📄</span>
+        <span>Analyzed Claim Statement</span>
+      </h2>
+      <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ analysis.claim }}">
+        <span>📋 Copy Claim</span>
+      </button>
+    </div>
+    <div class="claim-box">
+      "{{ analysis.claim }}"
+    </div>
+  </div>
+
+  <!-- AI Model Prediction Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <span>🤖</span>
+        <span>1. AI Model Prediction (DistilBERT)</span>
+      </h2>
+      <span class="badge badge-{{ label_lower }}">{{ analysis.prediction.label }}</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+      <div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Predicted Class</div>
+        <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">{{ analysis.prediction.label }}</div>
+      </div>
+      <div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Model Confidence</div>
+        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-glow);">
+          {{ "%.1f"|format(analysis.prediction.confidence * 100) }}%
         </div>
+        <small style="color: var(--text-muted); font-size: 0.8rem;">({{ analysis.explanation.confidence_status }})</small>
+      </div>
+      <div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Model Engine</div>
+        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.2rem;">DistilBERT (Fine-Tuned)</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 1.05rem; margin-bottom: 1rem;">Predicted Class Probability Distribution:</h3>
+    {% for cls, prob in analysis.probabilities.items() %}
+    {% set c_lower = cls|lower %}
+    <div class="prob-item">
+      <div class="prob-header">
+        <span>{{ cls }}</span>
+        <span>{{ "%.1f"|format(prob * 100) }}%</span>
+      </div>
+      <div class="prob-track">
+        <div class="prob-fill {{ c_lower }}" style="width: {{ prob * 100 }}%;"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Explainable AI (Integrated Gradients) Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <span>🧠</span>
+        <span>2. Explainability & Token Attributions</span>
+      </h2>
+      <span style="font-size: 0.85rem; color: var(--text-muted);">Integrated Gradients XAI</span>
+    </div>
+
+    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Why did the model predict this?</h3>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      {{ analysis.explanation.summary }}
+    </p>
+
+    <div style="margin-top: 1.25rem;">
+      <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">
+        Key Influential Phrases Identified:
+      </div>
+      
+      <div class="phrase-chips-container">
+        {% if analysis.explanation.important_phrases %}
+          {% for p in analysis.explanation.important_phrases %}
+          <div class="phrase-chip {% if p.direction == 'supports_prediction' %}supports{% else %}opposes{% endif %}" title="Direction: {{ p.direction }} | Importance: {{ '%.2f'|format(p.importance) }}">
+            <span>"{{ p.phrase }}"</span>
+            <span class="phrase-weight">{{ "%.2f"|format(p.importance) }}</span>
+            <span style="font-size: 0.75rem; opacity: 0.8;">
+              {% if p.direction == 'supports_prediction' %}▲ supports{% else %}▼ opposes{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
+            No distinct high-weight phrases detected above threshold.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-top: 1.25rem; padding: 0.9rem 1.1rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border-left: 3px solid var(--accent-indigo); font-size: 0.85rem; color: var(--text-muted);">
+      <strong>Attribution Note:</strong> These phrases influenced the model's prediction. They are model-attribution signals, not proof that the claim is true or false.
+    </div>
+  </div>
+
+  <!-- Evidence Retrieval & Fact-Check Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <span>🌐</span>
+        <span>3. External Evidence Verification</span>
+      </h2>
+      <span class="badge badge-{{ analysis.evidence.status|lower }}">
+        {{ analysis.evidence.status|upper }} EVIDENCE
+      </span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+      {{ analysis.evidence.summary }}
+    </p>
+
+    <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Retrieved Fact-Check Records:</h3>
+    
+    {% if analysis.evidence.sources and analysis.evidence.sources|length > 0 %}
+    <div class="evidence-list">
+      {% for s in analysis.evidence.sources %}
+      <article class="evidence-item {{ s.relation|lower }}">
+        <div class="evidence-title">
+          {{ loop.index }}. {{ s.title|default('External Source Record') }}
+        </div>
+        
+        <div class="evidence-meta">
+          <span><strong>Source:</strong> {{ s.source|default('Open Archive') }}</span>
+          <span>&bull;</span>
+          <span><strong>Relation:</strong> <em style="text-transform: uppercase;">{{ s.relation|default('unspecified') }}</em></span>
+          <span>&bull;</span>
+          <span><strong>Relevance Score:</strong> {{ "%.2f"|format(s.relevance_score|default(0.0)) }}</span>
+        </div>
+
+        {% if s.snippet %}
+        <p class="evidence-snippet">
+          "{{ s.snippet }}"
+        </p>
         {% endif %}
 
-        <div class="card">
-            <h3>Analyzed Claim</h3>
-            <blockquote style="font-size: 1.1em; font-style: italic; margin: 0; color: #111;">
-                "{{ analysis.claim }}"
-            </blockquote>
-        </div>
+        {% if s.url and s.url != '#' %}
+        <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <span>View Source Article</span>
+          <span>&rarr;</span>
+        </a>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="background: rgba(0, 0, 0, 0.25); padding: 2rem; border-radius: var(--radius-md); text-align: center; color: var(--text-muted); border: 1px dashed var(--border-card);">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+      <p style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">No Corroborating Open-Web Evidence Found</p>
+      <p style="font-size: 0.88rem; margin-bottom: 0;">
+        No authoritative fact-check entries or encyclopedic records matched this claim above confidence thresholds. (Zero fabricated citations returned)
+      </p>
+    </div>
+    {% endif %}
+  </div>
 
-        <div class="card">
-            <h3>Final Assessment</h3>
-            <p style="font-size: 1.15em; font-weight: bold; margin-bottom: 5px;">{{ analysis.verification.result }}</p>
-            <p style="color: #555; margin-top: 0;">{{ analysis.verification.assessment_note }}</p>
-        </div>
-
-        <div class="card">
-            <h3>1. AI Model Prediction (DistilBERT)</h3>
-            <p>
-                Predicted Veracity Class: 
-                <span class="badge badge-{{ analysis.prediction.label|lower }}">{{ analysis.prediction.label }}</span>
-                &nbsp;|&nbsp; Model Confidence: <strong>{{ "%.1f"|format(analysis.prediction.confidence * 100) }}%</strong>
-                ({{ analysis.explanation.confidence_status }})
-            </p>
-            
-            <h4>Class Probabilities:</h4>
-            {% for cls, prob in analysis.probabilities.items() %}
-            <div class="prob-bar-container">
-                <div style="display: flex; justify-content: space-between; font-size: 0.9em;">
-                    <span>{{ cls }}</span>
-                    <span>{{ "%.1f"|format(prob * 100) }}%</span>
-                </div>
-                <div class="prob-bar">
-                    <div class="prob-fill" style="width: {{ prob * 100 }}%;"></div>
-                </div>
-            </div>
-            {% endfor %}
-
-            <h4 style="margin-top: 20px;">Why the Model Predicted This (Token Attributions):</h4>
-            <p style="font-size: 0.9em; color: #555;">{{ analysis.explanation.summary }}</p>
-            <div>
-                {% for p in analysis.explanation.important_phrases %}
-                <span class="phrase-tag {% if p.direction != 'supports_prediction' %}phrase-oppose{% endif %}">
-                    "{{ p.phrase }}" ({{ p.direction }}, weight: {{ "%.2f"|format(p.importance) }})
-                </span>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>2. External Evidence Verification</h3>
-            <p>
-                Evidence Status: 
-                <span class="badge badge-{{ analysis.evidence.status|lower }}">{{ analysis.evidence.status|upper }}</span>
-            </p>
-            <p style="color: #444;">{{ analysis.evidence.summary }}</p>
-
-            <h4>Retrieved Sources:</h4>
-            {% if analysis.evidence.sources %}
-                {% for s in analysis.evidence.sources %}
-                <div class="source-item">
-                    <strong>{{ loop.index }}. {{ s.title|default('External Reference') }}</strong> 
-                    <span style="font-size: 0.85em; color: #666;">({{ s.source|default('Reference') }} &bull; Relation: <em>{{ (s.relation|default('unspecified'))|upper }}</em> &bull; Relevance: {{ "%.2f"|format(s.relevance_score|default(0.0)) }})</span><br>
-                    <small style="color: #555;">{{ s.snippet|default('') }}</small><br>
-                    <a href="{{ s.url|default('#') }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: #0066cc;">View Source Record &rarr;</a>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p style="color: #777; font-style: italic;">No external sources were retrieved or evidence was insufficient. (Zero fabricated citations)</p>
-            {% endif %}
-        </div>
-    </main>
-
-    <footer class="disclaimer">
-        <p><strong>Responsible AI Notice:</strong> {{ analysis.responsible_ai.confidence_note }} {{ analysis.responsible_ai.verification_note }}</p>
-    </footer>
-</body>
-</html>
+  <!-- Bottom CTAs -->
+  <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+    <a href="/analyze" class="btn btn-primary">
+      <span>Analyze Another Statement</span>
+      <span>&rarr;</span>
+    </a>
+    <a href="/history" class="btn btn-secondary">
+      <span>View Analysis History</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

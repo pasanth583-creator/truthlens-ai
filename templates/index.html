@@ -1,47 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruthLens AI — Explainable Fact-Checking & News Verification</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
-        header { border-bottom: 2px solid #eaeaea; padding-bottom: 20px; margin-bottom: 30px; }
-        h1 { margin: 0 0 10px 0; color: #111; }
-        .tagline { color: #666; font-size: 1.1em; }
-        .btn { display: inline-block; background: #0066cc; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
-        .btn:hover { background: #0052a3; }
-        .card { background: #f9f9f9; border: 1px solid #e1e1e1; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .disclaimer { font-size: 0.9em; color: #777; margin-top: 40px; border-top: 1px solid #eaeaea; padding-top: 15px; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>TruthLens AI</h1>
-        <div class="tagline">Explainable NLP Fake News Detection & Real-Time Evidence Verification</div>
-    </header>
+{% extends "base.html" %}
 
-    <main>
-        <div class="card">
-            <h2>Verify Claims & Articles</h2>
-            <p>TruthLens AI integrates a fine-tuned Transformer model (DistilBERT) with token-level Integrated Gradients explainability and live authoritative evidence retrieval.</p>
-            <p>Our dual-pipeline system independently evaluates linguistic patterns and corroborating open-web facts.</p>
-            <a href="/analyze" class="btn" id="start-analysis-btn">Start Claim Analysis &rarr;</a>
-            <a href="/history" class="btn" id="view-history-btn" style="background: #4b5563; margin-left: 10px;">View History &rarr;</a>
-        </div>
+{% block title %}TruthLens AI — See Beyond the Claim{% endblock %}
 
-        <div class="card">
-            <h3>API Access</h3>
-            <p>Developer and automated analysis endpoints are available:</p>
-            <ul>
-                <li><code>GET /api/health</code> — Check backend engine and model status</li>
-                <li><code>POST /api/analyze</code> — Submit JSON payload <code>{"text": "..."}</code> for full verification analysis</li>
-            </ul>
-        </div>
-    </main>
+{% block content %}
+<div class="container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-pill">
+      <span>⚡ Next-Generation Explainable Fact-Checking</span>
+    </div>
+    
+    <h1 class="hero-title">See Beyond the Claim.</h1>
+    
+    <p class="hero-subtitle">
+      TruthLens AI analyzes claims, explains model predictions, retrieves supporting or contradicting evidence, and helps you understand why a claim may be trustworthy, misleading, or false.
+    </p>
 
-    <footer class="disclaimer">
-        <p><strong>Responsible AI Notice:</strong> Model predictions reflect learned training associations. Retrieved evidence is sourced independently from authoritative archives. Unverified claims indicate insufficient external corroboration.</p>
-    </footer>
-</body>
-</html>
+    <div class="hero-actions">
+      <a href="/analyze" class="btn btn-primary" id="hero-cta-analyze">
+        <span>Analyze a Claim</span>
+        <span>&rarr;</span>
+      </a>
+      <a href="/history" class="btn btn-secondary" id="hero-cta-history">
+        <span>View History Logs</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Capability Pipeline Diagram -->
+  <section class="pipeline-section">
+    <div class="section-heading">
+      <h2>How TruthLens AI Operates</h2>
+      <p>A dual-pipeline verification engine combining transformer NLP with live open-web fact checking.</p>
+    </div>
+
+    <div class="pipeline-flow">
+      <div class="pipeline-node">
+        <div class="node-number">1</div>
+        <div class="node-title">Claim Input</div>
+        <p class="node-desc">News excerpt, public claim, or viral statement is sanitized and parsed.</p>
+      </div>
+
+      <div class="pipeline-node">
+        <div class="node-number">2</div>
+        <div class="node-title">AI Classification</div>
+        <p class="node-desc">Fine-tuned DistilBERT predicts veracity class and probability distribution.</p>
+      </div>
+
+      <div class="pipeline-node">
+        <div class="node-number">3</div>
+        <div class="node-title">Explainability</div>
+        <p class="node-desc">Integrated Gradients highlights influential tokens driving the prediction.</p>
+      </div>
+
+      <div class="pipeline-node">
+        <div class="node-number">4</div>
+        <div class="node-title">Evidence Retrieval</div>
+        <p class="node-desc">Live querying of Wikipedia & Fact-Check APIs for corroborating facts.</p>
+      </div>
+
+      <div class="pipeline-node">
+        <div class="node-number">5</div>
+        <div class="node-title">Verification</div>
+        <p class="node-desc">Dual-signal synthesis reconciles model signals with external reality.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Cards Grid -->
+  <section style="margin-bottom: 4rem;">
+    <div class="section-heading">
+      <h2>Core Verification Capabilities</h2>
+      <p>Built for rigorous, transparent, and explainable misinformation detection.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Classification</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Production DistilBERT model fine-tuned across multi-domain datasets (ISOT & LIAR) for 3-class veracity detection: Reliable, Misleading, and False.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Explainable Predictions</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Token-level Integrated Gradients reveal which words elevated or opposed the classification, ensuring complete transparency without black-box opacity.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>Evidence Retrieval</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Real-time query synthesis retrieves authoritative encyclopedic and fact-check records with zero citation hallucinations or fabricated URLs.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <h3>Verification Signals</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Explicit conflict detection flags cases where linguistic style differs from verified facts, ensuring external truth always supersedes model confidence.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Integration Banner -->
+  <section class="card" style="margin-bottom: 4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+    <div>
+      <h3 style="margin-bottom: 0.35rem;">Developer API Access</h3>
+      <p style="color: var(--text-muted); margin-bottom: 0; font-size: 0.95rem;">
+        Integrate automated claim verification directly via <code>POST /api/analyze</code> and query health via <code>GET /api/health</code>.
+      </p>
+    </div>
+    <a href="/api/health" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">
+      <span>View API Health Status &rarr;</span>
+    </a>
+  </section>
+</div>
+{% endblock %}

@@ -127,6 +127,11 @@ def create_app(config_name: str = "default") -> Flask:
         history_items = [rec.to_summary_dict() for rec in records]
         return render_template("history.html", history_items=history_items)
 
+    @app.route("/about", methods=["GET"])
+    def about():
+        """System architecture and methodology about page."""
+        return render_template("about.html")
+
     # ==============================================================
     # API ENDPOINTS
     # ==============================================================
