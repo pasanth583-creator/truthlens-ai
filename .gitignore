@@ -44,3 +44,15 @@ data/processed_backup_phase3_invalid/
 # Tokenizer vocabulary artifacts
 models/production/tokenizer.json
 models/transformer/tokenizer.json
+
+# All environment files and secrets
+.env*
+!.env.example
+
+# Model directories and checkpoints
+models/
+checkpoints/
+
+# Python test caches
+.pytest_cache/
+.mypy_cache/
