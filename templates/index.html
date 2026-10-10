@@ -1,125 +1,233 @@
 {% extends "base.html" %}
 
-{% block title %}TruthLens AI — See Beyond the Claim{% endblock %}
+{% block title %}TruthLens AI — Every Claim Deserves Evidence{% endblock %}
 
 {% block content %}
 <div class="container">
   <!-- Hero Section -->
   <section class="hero-section">
-    <div class="hero-pill">
-      <span>⚡ Next-Generation Explainable Fact-Checking</span>
+    <div class="hero-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>AI-ASSISTED FACT CHECKING</span>
     </div>
     
-    <h1 class="hero-title">See Beyond the Claim.</h1>
+    <h1 class="hero-headline">Every Claim Deserves Evidence.</h1>
     
     <p class="hero-subtitle">
-      TruthLens AI analyzes claims, explains model predictions, retrieves supporting or contradicting evidence, and helps you understand why a claim may be trustworthy, misleading, or false.
+      Analyze news, examine credible sources, and uncover misleading claims with explainable AI.
     </p>
 
+    <!-- Real Database-Backed Stats Bar -->
+    {% if stats and stats.total_count > 0 %}
+    <div class="hero-telemetry">
+      <span class="telemetry-dot"></span>
+      <span class="telemetry-label">Platform Activity:</span>
+      <span class="telemetry-stat"><strong>{{ stats.total_count }}</strong> claims analyzed</span>
+      <span class="telemetry-sep">&bull;</span>
+      <span class="telemetry-stat"><strong>{{ stats.today_count }}</strong> today</span>
+      <span class="telemetry-sep">&bull;</span>
+      <a href="/dashboard" class="telemetry-link">
+        View Dashboard &rarr;
+      </a>
+    </div>
+    {% endif %}
+
     <div class="hero-actions">
-      <a href="/analyze" class="btn btn-primary" id="hero-cta-analyze">
+      <a href="/analyze" class="btn btn-primary" id="hero-btn-analyze">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
         <span>Analyze a Claim</span>
-        <span>&rarr;</span>
       </a>
-      <a href="/history" class="btn btn-secondary" id="hero-cta-history">
-        <span>View History Logs</span>
+      <a href="/dashboard" class="btn btn-secondary" id="hero-btn-dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>View Dashboard</span>
       </a>
+    </div>
+
+    <!-- Editorial Visual: Verification Flow Structure (CLAIM -> EVIDENCE -> ASSESSMENT) -->
+    <div class="editorial-visual-container" aria-hidden="true">
+      <div class="editorial-visual-step">
+        <div class="step-tag">Claim &bull; Input</div>
+        <div class="step-card">
+          <div class="step-card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <span>Claim Statement</span>
+          </div>
+          <div class="step-card-body">
+            Input statement or news article link for automated processing.
+          </div>
+        </div>
+      </div>
+
+      <div class="editorial-visual-arrow">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </div>
+
+      <div class="editorial-visual-step">
+        <div class="step-tag">Evidence &bull; Retrieval</div>
+        <div class="step-card">
+          <div class="step-card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>Live Sources</span>
+          </div>
+          <div class="step-card-body">
+            Searches available external reference sources and displays the retrieved results.
+          </div>
+        </div>
+      </div>
+
+      <div class="editorial-visual-arrow">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </div>
+
+      <div class="editorial-visual-step">
+        <div class="step-tag">Assessment &bull; Synthesis</div>
+        <div class="step-card verified-highlight">
+          <div class="step-card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span>Assessment</span>
+          </div>
+          <div class="step-card-body">
+            Compares model predictions with available evidence and flags disagreements.
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Capability Pipeline Diagram -->
-  <section class="pipeline-section">
-    <div class="section-heading">
-      <h2>How TruthLens AI Operates</h2>
-      <p>A dual-pipeline verification engine combining transformer NLP with live open-web fact checking.</p>
+  <!-- Capability Section (4 Cards) -->
+  <section class="section-container">
+    <div class="section-header">
+      <h2>Platform Capabilities</h2>
+      <p>Analyze a claim and inspect the evidence behind its assessment.</p>
     </div>
 
-    <div class="pipeline-flow">
-      <div class="pipeline-node">
-        <div class="node-number">1</div>
-        <div class="node-title">Claim Input</div>
-        <p class="node-desc">News excerpt, public claim, or viral statement is sanitized and parsed.</p>
-      </div>
-
-      <div class="pipeline-node">
-        <div class="node-number">2</div>
-        <div class="node-title">AI Classification</div>
-        <p class="node-desc">Fine-tuned DistilBERT predicts veracity class and probability distribution.</p>
-      </div>
-
-      <div class="pipeline-node">
-        <div class="node-number">3</div>
-        <div class="node-title">Explainability</div>
-        <p class="node-desc">Integrated Gradients highlights influential tokens driving the prediction.</p>
-      </div>
-
-      <div class="pipeline-node">
-        <div class="node-number">4</div>
-        <div class="node-title">Evidence Retrieval</div>
-        <p class="node-desc">Live querying of Wikipedia & Fact-Check APIs for corroborating facts.</p>
-      </div>
-
-      <div class="pipeline-node">
-        <div class="node-number">5</div>
-        <div class="node-title">Verification</div>
-        <p class="node-desc">Dual-signal synthesis reconciles model signals with external reality.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature Cards Grid -->
-  <section style="margin-bottom: 4rem;">
-    <div class="section-heading">
-      <h2>Core Verification Capabilities</h2>
-      <p>Built for rigorous, transparent, and explainable misinformation detection.</p>
-    </div>
-
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
+    <div class="capabilities-grid">
+      <!-- Card 1: AI Classification -->
+      <div class="capability-card">
+        <div class="capability-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+            <line x1="20" y1="9" x2="23" y2="9"></line>
+            <line x1="20" y1="14" x2="23" y2="14"></line>
+            <line x1="1" y1="9" x2="4" y2="9"></line>
+            <line x1="1" y1="14" x2="4" y2="14"></line>
+          </svg>
+        </div>
         <h3>AI Classification</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Production DistilBERT model fine-tuned across multi-domain datasets (ISOT & LIAR) for 3-class veracity detection: Reliable, Misleading, and False.
-        </p>
+        <p>Classifies submitted text as False, Misleading, or Reliable. The prediction is a model signal, not proof of truth.</p>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🧠</div>
+      <!-- Card 2: Explainable Predictions -->
+      <div class="capability-card">
+        <div class="capability-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
         <h3>Explainable Predictions</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Token-level Integrated Gradients reveal which words elevated or opposed the classification, ensuring complete transparency without black-box opacity.
-        </p>
+        <p>Highlights words and phrases that influenced the model's prediction.</p>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h3>Evidence Retrieval</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Real-time query synthesis retrieves authoritative encyclopedic and fact-check records with zero citation hallucinations or fabricated URLs.
-        </p>
+      <!-- Card 3: Live Evidence Retrieval -->
+      <div class="capability-card">
+        <div class="capability-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </div>
+        <h3>Live Evidence</h3>
+        <p>Searches available external reference sources and displays the retrieved results.</p>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">⚖️</div>
-        <h3>Verification Signals</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Explicit conflict detection flags cases where linguistic style differs from verified facts, ensuring external truth always supersedes model confidence.
-        </p>
+      <!-- Card 4: Evidence Conflict Detection -->
+      <div class="capability-card">
+        <div class="capability-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3>Verification</h3>
+        <p>Compares model predictions with available evidence and flags disagreements.</p>
       </div>
     </div>
   </section>
 
-  <!-- API Integration Banner -->
-  <section class="card" style="margin-bottom: 4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
-    <div>
-      <h3 style="margin-bottom: 0.35rem;">Developer API Access</h3>
-      <p style="color: var(--text-muted); margin-bottom: 0; font-size: 0.95rem;">
-        Integrate automated claim verification directly via <code>POST /api/analyze</code> and query health via <code>GET /api/health</code>.
-      </p>
+  <!-- 5-Step Verification Process Flow -->
+  <section class="section-container">
+    <div class="section-header">
+      <h2>Verification Process</h2>
+      <p>Follow how TruthLens processes text, retrieves evidence, and produces a verification assessment.</p>
     </div>
-    <a href="/api/health" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">
-      <span>View API Health Status &rarr;</span>
-    </a>
+
+    <div class="process-flow">
+      <!-- Step 1 -->
+      <div class="process-step">
+        <div class="process-step-num">1</div>
+        <h4>Submit Claim</h4>
+        <p>Enter a claim statement or news article URL.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="process-step">
+        <div class="process-step-num">2</div>
+        <h4>Analyze Text</h4>
+        <p>Classifies language patterns and computes token attributions.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="process-step">
+        <div class="process-step-num">3</div>
+        <h4>Retrieve Evidence</h4>
+        <p>Searches available external reference sources and displays the retrieved results.</p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="process-step">
+        <div class="process-step-num">4</div>
+        <h4>Compare Signals</h4>
+        <p>Compares model predictions with available evidence and flags disagreements.</p>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="process-step">
+        <div class="process-step-num">5</div>
+        <h4>View Assessment</h4>
+        <p>Inspect the evidence-based assessment and model explanation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Action Callout -->
+  <section class="action-callout">
+    <div class="action-callout-content">
+      <h3>Analyze a claim and inspect the evidence</h3>
+      <p>Analyze a claim and inspect the evidence behind its assessment.</p>
+    </div>
+    <div class="action-callout-buttons">
+      <a href="/analyze" class="btn btn-primary">Analyze a Claim</a>
+      <a href="/dashboard" class="btn btn-secondary">View Dashboard</a>
+    </div>
   </section>
 </div>
 {% endblock %}

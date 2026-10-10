@@ -1,194 +1,304 @@
 {% extends "base.html" %}
 
-{% block title %}Verification Report — TruthLens AI{% endblock %}
+{% block title %}Verification Report #{{ analysis.id }} — TruthLens AI{% endblock %}
 
 {% block content %}
-<div class="container result-container">
-  <!-- Top Navigation / Actions -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
+<div class="container container-report">
+  <!-- Top Navigation / Action Bar -->
+  <div class="report-top-bar">
+    <div class="report-nav-actions">
       <a href="/analyze" class="btn btn-secondary btn-sm">&larr; Analyze Another Claim</a>
+      <a href="/dashboard" class="btn btn-secondary btn-sm">Dashboard</a>
       <a href="/history" class="btn btn-secondary btn-sm">History Logs</a>
     </div>
     {% if analysis.id %}
-    <span style="font-size: 0.88rem; color: var(--text-muted); font-family: monospace;">
-      Analysis Record #{{ analysis.id }} &bull; {{ analysis.created_at }}
-    </span>
+    <div class="report-meta-tag">
+      Record #{{ analysis.id }} &bull; {{ analysis.created_at_relative or analysis.created_at }}
+    </div>
     {% endif %}
   </div>
 
-  <!-- Status / Verdict Banner -->
+  <!-- 1. FINAL VERDICT BANNER -->
   {% set label_lower = analysis.prediction.label|lower %}
   {% set is_conflict = analysis.verification.conflict_detected %}
+  {% set is_insufficient = (analysis.evidence.status|lower == 'insufficient') %}
   
-  <div class="verdict-banner {% if is_conflict %}conflict{% elif label_lower == 'reliable' %}reliable{% elif label_lower == 'false' %}false{% elif label_lower == 'misleading' %}misleading{% else %}unverified{% endif %}">
-    <div>
-      <div style="font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.35rem; opacity: 0.85;">
-        {% if is_conflict %}⚠️ Warning &bull; Divergent Findings{% else %}Final Verification Assessment{% endif %}
-      </div>
-      <h1 class="verdict-heading" style="margin: 0;">{{ analysis.verification.result }}</h1>
-      <p class="verdict-subtext">
+  <div class="verdict-banner {% if is_conflict %}conflict{% elif is_insufficient %}unverified{% elif label_lower == 'reliable' %}reliable{% elif label_lower == 'false' %}false{% elif label_lower == 'misleading' %}misleading{% else %}unverified{% endif %}">
+    <div class="verdict-main">
+      <div class="verdict-badge-label">
         {% if is_conflict %}
-          External authoritative facts conflict with linguistic model prediction.
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>Divergent Findings Detected</span>
         {% else %}
-          Dual-signal synthesis across transformer classification and live evidence retrieval.
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <span>Final Verification Assessment</span>
+        {% endif %}
+      </div>
+      
+      <h1 class="verdict-title">{{ analysis.verification.result }}</h1>
+      
+      <p class="verdict-description">
+        Compare the model's prediction with the available evidence before drawing a conclusion.
+        {% if is_conflict %}
+          External authoritative records conflict with the model's linguistic style classification. External factual evidence takes precedence over statistical text patterns.
+        {% elif is_insufficient %}
+          Neural model evaluated linguistic writing style, but authoritative open-web encyclopedic archives lack corroborating factual records.
+        {% else %}
+          Dual-signal synthesis across fine-tuned DistilBERT classification and live external evidence retrieval.
         {% endif %}
       </p>
     </div>
     
-    <div>
-      <span class="badge badge-{% if is_conflict %}conflict{% else %}{{ label_lower }}{% endif %}" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
-        {% if is_conflict %}⚡ CONFLICT DETECTED{% else %}{{ analysis.prediction.label }}{% endif %}
+    <div class="verdict-badge-wrap">
+      <span class="badge badge-lg badge-{% if is_conflict %}conflict{% elif is_insufficient %}unverified{% else %}{{ label_lower }}{% endif %}">
+        {% if is_conflict %}
+          CONFLICT DETECTED
+        {% elif is_insufficient %}
+          UNVERIFIED
+        {% else %}
+          {{ analysis.prediction.label|upper }}
+        {% endif %}
       </span>
     </div>
   </div>
 
-  <!-- Conflicting Signals Notice Box -->
+  <!-- Conflicting Signals Prominent Alert -->
   {% if is_conflict %}
-  <div class="alert alert-conflict" role="alert">
-    <span style="font-size: 1.4rem;">⚡</span>
+  <div class="alert alert-conflict mb-4" role="alert">
+    <div class="alert-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+    </div>
     <div>
-      <strong>Conflicting Signals Alert:</strong>
-      The classifier predicted <em>{{ analysis.prediction.label }}</em> based on writing style, but external authoritative evidence indicates <em>{{ analysis.evidence.status|upper }}</em>. Review the external evidence carefully below; authoritative facts supersede model predictions.
+      <h3 style="font-size: 1rem; margin-bottom: 0.25rem; color: #7C3AED;">Conflicting Signals Alert</h3>
+      <p style="margin: 0; font-size: 0.92rem; color: #581C87;">
+        The neural classifier predicted <strong>{{ analysis.prediction.label }}</strong> based on learned phrasing patterns, but retrieved external authoritative evidence indicates <strong>{{ analysis.evidence.status|upper }}</strong>. Factual external records supersede linguistic model classifications.
+      </p>
     </div>
   </div>
   {% endif %}
 
-  <!-- Analyzed Claim Box -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <span>📄</span>
-        <span>Analyzed Claim Statement</span>
-      </h2>
+  <!-- 2. ANALYZED STATEMENT & SOURCE CONTEXT -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div class="card-header-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <h2 class="card-title-sm">Analyzed Statement & Context</h2>
+      </div>
       <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ analysis.claim }}">
-        <span>📋 Copy Claim</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>Copy Claim</span>
       </button>
     </div>
-    <div class="claim-box">
+
+    {% if analysis.article_title %}
+    <div class="article-context-banner">
+      <div class="context-label">Source Article:</div>
+      <div class="context-title">{{ analysis.article_title }}</div>
+      {% if analysis.source_url %}
+      <div class="context-url">
+        <a href="{{ analysis.source_url }}" target="_blank" rel="noopener noreferrer">
+          <span>{{ analysis.source_url }}</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="claim-display-box">
       "{{ analysis.claim }}"
     </div>
   </div>
 
-  <!-- AI Model Prediction Card -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <span>🤖</span>
-        <span>1. AI Model Prediction (DistilBERT)</span>
-      </h2>
+  <!-- 3. AI MODEL PREDICTION & EXPLAINABILITY (INTEGRATED GRADIENTS) -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div class="card-header-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+          <rect x="9" y="9" width="6" height="6"></rect>
+          <line x1="9" y1="1" x2="9" y2="4"></line>
+          <line x1="15" y1="1" x2="15" y2="4"></line>
+          <line x1="9" y1="20" x2="9" y2="23"></line>
+          <line x1="15" y1="20" x2="15" y2="23"></line>
+          <line x1="20" y1="9" x2="23" y2="9"></line>
+          <line x1="20" y1="14" x2="23" y2="14"></line>
+          <line x1="1" y1="9" x2="4" y2="9"></line>
+          <line x1="1" y1="14" x2="4" y2="14"></line>
+        </svg>
+        <div>
+          <h2 class="card-title-sm">1. AI Model Prediction & Explainability</h2>
+          <p class="card-subtitle-sm">Evaluates linguistic style and training distribution patterns</p>
+        </div>
+      </div>
       <span class="badge badge-{{ label_lower }}">{{ analysis.prediction.label }}</span>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Predicted Class</div>
-        <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">{{ analysis.prediction.label }}</div>
+    <!-- Prediction Summary Grid -->
+    <div class="stats-summary-grid">
+      <div class="summary-stat-cell">
+        <div class="stat-cell-label">Predicted Veracity Class</div>
+        <div class="stat-cell-value">{{ analysis.prediction.label }}</div>
       </div>
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Model Confidence</div>
-        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-glow);">
-          {{ "%.1f"|format(analysis.prediction.confidence * 100) }}%
+      
+      <div class="summary-stat-cell">
+        <div class="stat-cell-label">Model Confidence Score</div>
+        <div class="stat-cell-value text-accent">{{ "%.1f"|format(analysis.prediction.confidence * 100) }}%</div>
+        <div class="stat-cell-hint">{{ analysis.explanation.confidence_status }}</div>
+      </div>
+
+      <div class="summary-stat-cell">
+        <div class="stat-cell-label">Neural Architecture</div>
+        <div class="stat-cell-value" style="font-size: 1.1rem; color: var(--text-secondary);">DistilBERT Transformer</div>
+        <div class="stat-cell-hint">Static fine-tuned weights</div>
+      </div>
+    </div>
+
+    <!-- Probability Distribution Bars -->
+    <div class="prob-section">
+      <h3 class="section-subheading">Class Probability Distribution</h3>
+      {% for cls, prob in analysis.probabilities.items() %}
+      {% set c_lower = cls|lower %}
+      <div class="prob-item">
+        <div class="prob-header">
+          <span class="prob-name">{{ cls }}</span>
+          <span class="prob-value">{{ "%.1f"|format(prob * 100) }}%</span>
         </div>
-        <small style="color: var(--text-muted); font-size: 0.8rem;">({{ analysis.explanation.confidence_status }})</small>
+        <div class="prob-track">
+          <div class="prob-fill {{ c_lower }}" style="width: {{ (prob * 100)|round(1) }}%;"></div>
+        </div>
       </div>
-      <div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Model Engine</div>
-        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.2rem;">DistilBERT (Fine-Tuned)</div>
-      </div>
+      {% endfor %}
     </div>
 
-    <h3 style="font-size: 1.05rem; margin-bottom: 1rem;">Predicted Class Probability Distribution:</h3>
-    {% for cls, prob in analysis.probabilities.items() %}
-    {% set c_lower = cls|lower %}
-    <div class="prob-item">
-      <div class="prob-header">
-        <span>{{ cls }}</span>
-        <span>{{ "%.1f"|format(prob * 100) }}%</span>
-      </div>
-      <div class="prob-track">
-        <div class="prob-fill {{ c_lower }}" style="width: {{ prob * 100 }}%;"></div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+    <!-- Integrated Gradients Attributions -->
+    <div class="xai-section">
+      <h3 class="section-subheading">Why did the model predict this?</h3>
+      <p class="xai-summary-text">
+        {{ analysis.explanation.summary }}
+      </p>
 
-  <!-- Explainable AI (Integrated Gradients) Card -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <span>🧠</span>
-        <span>2. Explainability & Token Attributions</span>
-      </h2>
-      <span style="font-size: 0.85rem; color: var(--text-muted);">Integrated Gradients XAI</span>
-    </div>
-
-    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Why did the model predict this?</h3>
-    <p style="color: var(--text-secondary); font-size: 0.95rem;">
-      {{ analysis.explanation.summary }}
-    </p>
-
-    <div style="margin-top: 1.25rem;">
-      <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">
-        Key Influential Phrases Identified:
+      <div class="xai-chips-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Key Influential Phrases Identified (Integrated Gradients Attribution):</span>
       </div>
       
       <div class="phrase-chips-container">
-        {% if analysis.explanation.important_phrases %}
+        {% if analysis.explanation.important_phrases and analysis.explanation.important_phrases|length > 0 %}
           {% for p in analysis.explanation.important_phrases %}
-          <div class="phrase-chip {% if p.direction == 'supports_prediction' %}supports{% else %}opposes{% endif %}" title="Direction: {{ p.direction }} | Importance: {{ '%.2f'|format(p.importance) }}">
-            <span>"{{ p.phrase }}"</span>
+          <div class="phrase-chip {% if p.direction == 'supports_prediction' %}supports{% else %}opposes{% endif %}" title="Direction: {{ p.direction }} | Importance Score: {{ '%.2f'|format(p.importance) }}">
+            <span class="phrase-text">"{{ p.phrase }}"</span>
             <span class="phrase-weight">{{ "%.2f"|format(p.importance) }}</span>
-            <span style="font-size: 0.75rem; opacity: 0.8;">
+            <span class="phrase-dir">
               {% if p.direction == 'supports_prediction' %}▲ supports{% else %}▼ opposes{% endif %}
             </span>
           </div>
           {% endfor %}
         {% else %}
-          <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
-            No distinct high-weight phrases detected above threshold.
+          <p class="empty-phrases-notice">
+            No distinct high-weight phrases detected above the attribution threshold.
           </p>
         {% endif %}
       </div>
     </div>
-
-    <div style="margin-top: 1.25rem; padding: 0.9rem 1.1rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border-left: 3px solid var(--accent-indigo); font-size: 0.85rem; color: var(--text-muted);">
-      <strong>Attribution Note:</strong> These phrases influenced the model's prediction. They are model-attribution signals, not proof that the claim is true or false.
-    </div>
   </div>
 
-  <!-- Evidence Retrieval & Fact-Check Card -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <span>🌐</span>
-        <span>3. External Evidence Verification</span>
-      </h2>
-      <span class="badge badge-{{ analysis.evidence.status|lower }}">
-        {{ analysis.evidence.status|upper }} EVIDENCE
-      </span>
+  <!-- 4. LIVE EVIDENCE PANEL (MEDIAWIKI & OPEN WEB) -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div class="card-header-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <div>
+          <h2 class="card-title-sm">2. Live Evidence Verification</h2>
+          <p class="card-subtitle-sm">Queried from real-time encyclopedic and open-web archives</p>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="badge badge-{% if analysis.evidence.status|lower == 'supporting' %}reliable{% elif analysis.evidence.status|lower == 'contradicting' %}false{% elif analysis.evidence.status|lower == 'mixed' %}misleading{% else %}unverified{% endif %}">
+          {{ analysis.evidence.status|upper }} EVIDENCE
+        </span>
+        {% if analysis.id %}
+        <form action="/refresh-evidence/{{ analysis.id }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-secondary btn-xs" id="refresh-evidence-btn" title="Re-query live fact-checking archives">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <span>Refresh Evidence</span>
+          </button>
+        </form>
+        {% endif %}
+      </div>
     </div>
 
-    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+    <!-- Evidence Meta Bar -->
+    <div class="evidence-meta-bar">
+      <div class="evidence-meta-items">
+        <div class="evidence-meta-item">
+          <span class="meta-label">Provider:</span>
+          <strong class="meta-value">{{ analysis.evidence.provider or 'Wikipedia (Public API)' }}</strong>
+        </div>
+        <div class="evidence-meta-item">
+          <span class="meta-label">Provider Status:</span>
+          {% if analysis.evidence.sources and analysis.evidence.sources|length > 0 %}
+          <span class="badge badge-xs badge-reliable">LIVE — REQUEST SUCCESSFUL</span>
+          {% else %}
+          <span class="badge badge-xs badge-unverified">LIVE — 0 MATCHING RECORDS</span>
+          {% endif %}
+        </div>
+        <div class="evidence-meta-item">
+          <span class="meta-label">Records Found:</span>
+          <strong class="meta-value">{{ analysis.evidence.sources|length if analysis.evidence.sources else 0 }}</strong>
+        </div>
+        <div class="evidence-meta-item">
+          <span class="meta-label">Stance Breakdown:</span>
+          <span class="stance-support">{{ analysis.evidence.supporting_count or 0 }} Supporting</span>
+          <span class="stance-sep">&bull;</span>
+          <span class="stance-contradict">{{ analysis.evidence.contradicting_count or 0 }} Contradicting</span>
+          <span class="stance-sep">&bull;</span>
+          <span class="stance-neutral">{{ analysis.evidence.neutral_count or 0 }} Neutral</span>
+        </div>
+      </div>
+    </div>
+
+    {% if analysis.search_queries or analysis.evidence.search_queries %}
+    <div style="margin: 0.75rem 0 1rem 0; padding: 0.6rem 0.8rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); font-size: 0.82rem;">
+      <span style="font-weight: 600; color: var(--text-secondary); margin-right: 0.4rem;">Search Queries Used:</span>
+      {% for q in (analysis.search_queries or analysis.evidence.search_queries) %}
+      <span class="badge badge-xs badge-unverified" style="margin-right: 0.3rem; margin-bottom: 0.2rem; font-weight: normal;">"{{ q }}"</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <p class="evidence-summary-text">
       {{ analysis.evidence.summary }}
     </p>
 
-    <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Retrieved Fact-Check Records:</h3>
+    <h3 class="section-subheading">Retrieved Authoritative Records</h3>
     
     {% if analysis.evidence.sources and analysis.evidence.sources|length > 0 %}
     <div class="evidence-list">
       {% for s in analysis.evidence.sources %}
       <article class="evidence-item {{ s.relation|lower }}">
-        <div class="evidence-title">
-          {{ loop.index }}. {{ s.title|default('External Source Record') }}
+        <div class="evidence-item-header">
+          <div class="evidence-title">
+            {{ loop.index }}. {{ s.title|default('External Reference Record') }}
+          </div>
+          <span class="badge badge-xs badge-{% if s.relation|lower == 'supports' %}reliable{% elif s.relation|lower == 'refutes' or s.relation|lower == 'contradicts' %}false{% else %}unverified{% endif %}">
+            {{ s.relation|upper }}
+          </span>
         </div>
         
-        <div class="evidence-meta">
+        <div class="evidence-meta-tags">
           <span><strong>Source:</strong> {{ s.source|default('Open Archive') }}</span>
           <span>&bull;</span>
-          <span><strong>Relation:</strong> <em style="text-transform: uppercase;">{{ s.relation|default('unspecified') }}</em></span>
+          <span><strong>Relevance:</strong> {{ "%.2f"|format(s.relevance_score|default(0.0)) }}</span>
+          {% if s.retrieved_at_display %}
           <span>&bull;</span>
-          <span><strong>Relevance Score:</strong> {{ "%.2f"|format(s.relevance_score|default(0.0)) }}</span>
+          <span><strong>Retrieved:</strong> {{ s.retrieved_at_display }}</span>
+          {% endif %}
         </div>
 
         {% if s.snippet %}
@@ -198,33 +308,206 @@
         {% endif %}
 
         {% if s.url and s.url != '#' %}
-        <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
-          <span>View Source Article</span>
-          <span>&rarr;</span>
-        </a>
+        <div class="evidence-link-wrap">
+          <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+            <span>Open Verified Source ({{ s.url|truncate(60, True, '...') }})</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
         {% endif %}
       </article>
       {% endfor %}
     </div>
     {% else %}
-    <div style="background: rgba(0, 0, 0, 0.25); padding: 2rem; border-radius: var(--radius-md); text-align: center; color: var(--text-muted); border: 1px dashed var(--border-card);">
-      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
-      <p style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">No Corroborating Open-Web Evidence Found</p>
-      <p style="font-size: 0.88rem; margin-bottom: 0;">
+    <div class="empty-state-container-sm">
+      <div class="empty-state-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <h4>No Corroborating Open-Web Evidence Found</h4>
+      <p>
         No authoritative fact-check entries or encyclopedic records matched this claim above confidence thresholds. (Zero fabricated citations returned)
       </p>
     </div>
     {% endif %}
   </div>
 
-  <!-- Bottom CTAs -->
-  <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
-    <a href="/analyze" class="btn btn-primary">
+  <!-- 4.5. GOOGLE FACT CHECK TOOLS RESULTS (IF CONFIGURED) -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div class="card-header-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <div>
+          <h2 class="card-title-sm">Google Fact Check Tools Verification</h2>
+          <p class="card-subtitle-sm">Official ClaimReview markup from accredited fact-check organizations</p>
+        </div>
+      </div>
+      {% if analysis.fact_checks %}
+        {% set fc_pstatus = analysis.fact_checks.provider_status|default('UNAVAILABLE') %}
+        {% if fc_pstatus == 'LIVE_FOUND' or (analysis.fact_checks.matched_claims and analysis.fact_checks.matched_claims > 0) %}
+          <span class="badge badge-reliable">LIVE — {{ analysis.fact_checks.matched_claims }} MATCHED</span>
+        {% elif fc_pstatus == 'LIVE_NO_MATCH' %}
+          <span class="badge badge-unverified">LIVE — 0 MATCHES</span>
+        {% elif fc_pstatus == 'UNAVAILABLE' %}
+          <span class="badge badge-unverified">UNAVAILABLE — NOT CONFIGURED</span>
+        {% else %}
+          <span class="badge badge-false">{{ analysis.fact_checks.status_display|default('ERROR — REQUEST FAILED') }}</span>
+        {% endif %}
+      {% else %}
+        <span class="badge badge-unverified">UNAVAILABLE</span>
+      {% endif %}
+    </div>
+
+    <!-- Google Fact Check Status Note -->
+    {% if analysis.fact_checks and analysis.fact_checks.message %}
+    <div style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+      {{ analysis.fact_checks.message }}
+    </div>
+    {% endif %}
+
+    {% if analysis.fact_checks and analysis.fact_checks.claims and analysis.fact_checks.claims|length > 0 %}
+    <div class="factcheck-list">
+      {% for fc in analysis.fact_checks.claims %}
+      {% set v_lower = fc.verdict|lower %}
+      <div class="factcheck-card">
+        <div class="factcheck-claim-label">CLAIM REVIEWED:</div>
+        <div class="factcheck-claim-text">"{{ fc.claim }}"</div>
+
+        <div class="factcheck-meta-grid">
+          <div>
+            <div class="factcheck-meta-key">VERDICT</div>
+            <span class="badge badge-{% if 'false' in v_lower %}false{% elif 'true' in v_lower %}reliable{% elif 'misleading' in v_lower %}misleading{% else %}unverified{% endif %}">
+              {{ fc.verdict }}
+            </span>
+          </div>
+
+          <div>
+            <div class="factcheck-meta-key">RATING</div>
+            <div class="factcheck-meta-val">{{ fc.rating or 'Unrated' }}</div>
+          </div>
+
+          <div>
+            <div class="factcheck-meta-key">PUBLISHER</div>
+            <div class="factcheck-meta-val">{{ fc.publisher or 'Google Fact Check Tools' }}</div>
+          </div>
+
+          <div>
+            <div class="factcheck-meta-key">REVIEW DATE</div>
+            <div class="factcheck-meta-val">{{ fc.review_date or 'N/A' }}</div>
+          </div>
+        </div>
+
+        {% if fc.verdict == 'NO EXISTING FACT CHECK' %}
+        <p class="factcheck-info-note">
+          Google Fact Check Tools did not find an existing fact-check record for this statement.
+        </p>
+        {% endif %}
+
+        {% if fc.source_url %}
+        <div class="factcheck-source-link">
+          <a href="{{ fc.source_url }}" target="_blank" rel="noopener noreferrer">
+            <span>Open Fact Check Organization Source</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-container-sm">
+      <p style="margin: 0; color: var(--text-secondary); font-size: 0.92rem;">
+        {% if analysis.fact_checks and analysis.fact_checks.status_display %}
+          {{ analysis.fact_checks.status_display }}
+        {% else %}
+          Google Fact Check Tools did not find an existing fact-check record for this specific statement.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 5. SIGNAL COMPARISON MATRIX (MODEL VS EVIDENCE) -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div class="card-header-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <div>
+          <h2 class="card-title-sm">3. Signal Comparison & Conflict Reconciliation</h2>
+          <p class="card-subtitle-sm">Reconciles internal linguistic signals with external factual ground truth</p>
+        </div>
+      </div>
+      <span class="badge badge-unverified">Dual-Signal Matrix</span>
+    </div>
+
+    <div class="signals-comparison-grid">
+      <!-- Column 1: AI Model Signal -->
+      <div class="signal-card signal-model">
+        <div class="signal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+          </svg>
+          <span>MODEL PREDICTION (NLP)</span>
+        </div>
+        <p class="signal-desc">
+          Evaluates writing style and learned training correlations from benchmark corpora:
+        </p>
+        <div class="signal-result-box">
+          <span class="signal-key">Predicted Style:</span>
+          <span class="badge badge-{{ label_lower }}">{{ analysis.prediction.label }} ({{ "%.1f"|format(analysis.prediction.confidence * 100) }}%)</span>
+        </div>
+      </div>
+
+      <!-- Column 2: External Evidence Signal -->
+      <div class="signal-card signal-evidence">
+        <div class="signal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+          </svg>
+          <span>EVIDENCE-BASED ASSESSMENT</span>
+        </div>
+        <p class="signal-desc">
+          Evaluates factual corroboration against authoritative open encyclopedias & fact registries:
+        </p>
+        <div class="signal-result-box">
+          <span class="signal-key">Factual Finding:</span>
+          <span class="badge badge-{{ analysis.evidence.status|lower }}">{{ analysis.evidence.status|upper }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Synthesis Result Note -->
+    <div class="synthesis-note">
+      <div class="synthesis-label">Final Verification Synthesis:</div>
+      <p class="synthesis-text">{{ analysis.verification.result }}</p>
+    </div>
+  </div>
+
+  <!-- 6. BOTTOM ACTIONS -->
+  <div class="report-bottom-actions">
+    <a href="/analyze" class="btn btn-primary" id="report-bottom-analyze">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
       <span>Analyze Another Statement</span>
-      <span>&rarr;</span>
     </a>
-    <a href="/history" class="btn btn-secondary">
-      <span>View Analysis History</span>
+    <a href="/dashboard" class="btn btn-secondary" id="report-bottom-dashboard">
+      <span>View Live Dashboard</span>
+    </a>
+    <a href="/history" class="btn btn-secondary" id="report-bottom-history">
+      <span>All History Logs</span>
     </a>
   </div>
 </div>

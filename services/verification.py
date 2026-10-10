@@ -9,6 +9,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from services.claim_extractor import extract_claim
 from services.explainer import explain_prediction, EXPLANATION_CONFIDENCE_THRESHOLD
 from services.evidence import search_evidence
+from services.google_fact_check import fact_check_article_claims
 
 
 def synthesize_verification(
@@ -19,8 +20,9 @@ def synthesize_verification(
 ) -> Dict[str, Any]:
     """Combine model prediction and evidence verification signals into a coherent assessment.
     
-    Decision Matrix:
-      - Insufficient evidence -> UNVERIFIED (never force True or False)
+    Evidence-First Decision Matrix:
+      - Insufficient evidence -> UNVERIFIED / INSUFFICIENT EVIDENCE (never force True or False)
+      - Mixed evidence -> MISLEADING (disputed / contested findings)
       - False/Misleading + Contradicting -> Likely False / Potentially False (if low confidence)
       - Reliable + Supporting -> Supported / Provisionally Supported (if low confidence)
       - False/Misleading + Supporting -> CONFLICTING SIGNALS
@@ -29,16 +31,25 @@ def synthesize_verification(
     is_low_confidence = confidence < confidence_threshold
     conflict_detected = False
 
-    # Case 5: Insufficient Evidence
+    # Case 1: Insufficient Evidence
     if evidence_status == "insufficient":
         status = "UNVERIFIED"
         result = "Unverified / Insufficient Evidence -- external evidence is insufficient to conclusively verify this claim."
         explanation_note = (
-            "The model predicted a linguistic pattern, but authoritative external sources "
+            "The model evaluated linguistic style, but authoritative external sources "
             "do not provide adequate evidence to support or refute the assertion. The claim remains unverified."
         )
 
-    # Case 1: False or Misleading + Contradicting Evidence
+    # Case 2: Mixed / Contested Evidence
+    elif evidence_status == "mixed":
+        status = "MISLEADING"
+        result = "Misleading / Mixed Evidence -- retrieved external sources report contested or conflicting findings."
+        explanation_note = (
+            "Available external evidence presents differing or contested perspectives, suggesting the claim "
+            "may oversimplify, misattribute, or present contested points as settled fact."
+        )
+
+    # Case 3: False or Misleading + Contradicting Evidence
     elif pred_label in {"False", "Misleading"} and evidence_status == "contradicting":
         status = "LIKELY_FALSE"
         if is_low_confidence:
@@ -50,7 +61,7 @@ def synthesize_verification(
             "indicate that this statement is false, disproven, or misleading."
         )
 
-    # Case 2: False or Misleading + Supporting Evidence (CONFLICT)
+    # Case 4: False or Misleading + Supporting Evidence (CONFLICT)
     elif pred_label in {"False", "Misleading"} and evidence_status == "supporting":
         conflict_detected = True
         status = "CONFLICTING_SIGNALS"
@@ -63,7 +74,7 @@ def synthesize_verification(
             "External evidence should take precedence over surface stylistic classification."
         )
 
-    # Case 3: Reliable + Supporting Evidence
+    # Case 5: Reliable + Supporting Evidence
     elif pred_label == "Reliable" and evidence_status == "supporting":
         status = "SUPPORTED"
         if is_low_confidence:
@@ -75,7 +86,7 @@ def synthesize_verification(
             "records affirmatively document and corroborate the core assertion."
         )
 
-    # Case 4: Reliable + Contradicting Evidence (CONFLICT)
+    # Case 6: Reliable + Contradicting Evidence (CONFLICT)
     elif pred_label == "Reliable" and evidence_status == "contradicting":
         conflict_detected = True
         status = "CONFLICTING_SIGNALS"
@@ -104,7 +115,7 @@ def synthesize_verification(
 
 
 def verify_claim(text: str, confidence_threshold: float = EXPLANATION_CONFIDENCE_THRESHOLD) -> Dict[str, Any]:
-    """Execute end-to-end verification pipeline: claim extraction, prediction, explainability, and evidence retrieval."""
+    """Execute end-to-end verification pipeline: claim extraction, prediction, explainability, and live evidence retrieval."""
     if not text or not text.strip():
         return {
             "claim": "",
@@ -118,7 +129,11 @@ def verify_claim(text: str, confidence_threshold: float = EXPLANATION_CONFIDENCE
             "evidence": {
                 "status": "insufficient",
                 "summary": "No input text provided.",
-                "sources": []
+                "sources": [],
+                "supporting_count": 0,
+                "contradicting_count": 0,
+                "neutral_count": 0,
+                "provider": "Wikipedia (Public API)"
             },
             "verification": {
                 "status": "UNVERIFIED",
@@ -137,19 +152,57 @@ def verify_claim(text: str, confidence_threshold: float = EXPLANATION_CONFIDENCE
     extracted = extract_claim(text)
     clean_claim = extracted["claim"]
 
-    # 2. Model prediction & explainability
+    # 2. Model prediction & explainability (DistilBERT static weights)
     explanation_res = explain_prediction(text, confidence_threshold=confidence_threshold)
     pred = explanation_res["prediction"]
     probs = explanation_res["probabilities"]
     exp = explanation_res["explanation"]
 
-    # 3. Evidence retrieval & ranking
-    evidence_res = search_evidence(clean_claim)
+    # 3. Live Evidence retrieval & quality ranking (MediaWiki + Google Fact Check)
+    try:
+        evidence_res = search_evidence(text)
+    except Exception:
+        from datetime import datetime, timezone
+        now_dt = datetime.now(timezone.utc)
+        evidence_res = {
+            "claim": clean_claim,
+            "extracted_claims": [],
+            "evidence_status": "insufficient",
+            "summary": "External evidence retrieval was unavailable or encountered an error. Claim remains unverified.",
+            "sources": [],
+            "supporting_count": 0,
+            "contradicting_count": 0,
+            "neutral_count": 0,
+            "total_retrieved": 0,
+            "search_queries": [],
+            "retrieved_at": now_dt.isoformat(),
+            "retrieved_at_display": now_dt.strftime("%d %b %Y, %H:%M UTC"),
+            "provider": "Wikipedia (Public API)",
+            "provider_status": {
+                "wikipedia": {"status": "ERROR", "status_display": "ERROR — REQUEST FAILED"},
+                "google_fact_check": {"status": "UNAVAILABLE", "status_display": "UNAVAILABLE — NOT CONFIGURED"}
+            },
+            "status": "UNAVAILABLE"
+        }
     ev_status = evidence_res["evidence_status"]
     ev_summary = evidence_res["summary"]
     ev_sources = evidence_res["sources"]
 
-    # 4. Synthesize verification decision
+    # 4. Google Fact Check Tools API query
+    try:
+        fact_checks = fact_check_article_claims(text)
+    except Exception:
+        fact_checks = {
+            "status": "error",
+            "provider_status": "ERROR",
+            "status_display": "ERROR — REQUEST FAILED",
+            "message": "Error communicating with Google Fact Check API.",
+            "claims": [],
+            "matched_claims": 0,
+            "queries_used": []
+        }
+
+    # 5. Synthesize verification decision
     verification_synthesis = synthesize_verification(
         pred_label=pred["label"],
         confidence=pred["confidence"],
@@ -161,14 +214,27 @@ def verify_claim(text: str, confidence_threshold: float = EXPLANATION_CONFIDENCE
         "claim": clean_claim,
         "original_text": text,
         "search_query": extracted["search_query"],
+        "search_queries": evidence_res.get("search_queries", extracted.get("search_queries", [])),
+        "entities": extracted.get("entities", []),
+        "extracted_claims": evidence_res.get("extracted_claims", []),
         "prediction": pred,
         "probabilities": probs,
         "explanation": exp,
         "evidence": {
             "status": ev_status,
             "summary": ev_summary,
-            "sources": ev_sources
+            "sources": ev_sources,
+            "supporting_count": evidence_res.get("supporting_count", 0),
+            "contradicting_count": evidence_res.get("contradicting_count", 0),
+            "neutral_count": evidence_res.get("neutral_count", 0),
+            "total_retrieved": evidence_res.get("total_retrieved", len(ev_sources)),
+            "provider": evidence_res.get("provider", "Wikipedia (Public API)"),
+            "provider_status": evidence_res.get("provider_status", {}),
+            "search_queries": evidence_res.get("search_queries", []),
+            "retrieved_at": evidence_res.get("retrieved_at", ""),
+            "retrieved_at_display": evidence_res.get("retrieved_at_display", "")
         },
+        "fact_checks": fact_checks,
         "verification": verification_synthesis,
         "responsible_ai": {
             "confidence_note": "Model confidence is not factual certainty.",
@@ -181,8 +247,9 @@ def verify_claim(text: str, confidence_threshold: float = EXPLANATION_CONFIDENCE
 
 
 if __name__ == "__main__":
-    import json
     sample = "George Washington was the first President of the United States."
     print("Testing verify_claim:")
     output = verify_claim(sample)
-    print(json.dumps(output, indent=2))
+    print(f"Prediction: {output['prediction']}")
+    print(f"Evidence Status: {output['evidence']['status']}")
+    print(f"Verdict: {output['verification']['result']}")

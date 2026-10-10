@@ -29,7 +29,7 @@ class TestAppRoutes(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"TruthLens AI", response.data)
-        self.assertIn(b"See Beyond the Claim", response.data)
+        self.assertIn(b"Every Claim Deserves Evidence", response.data)
         self.assertIn(b"Analyze a Claim", response.data)
 
     def test_get_analyze_route(self):

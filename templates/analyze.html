@@ -1,91 +1,236 @@
 {% extends "base.html" %}
 
-{% block title %}Analyze a Claim — TruthLens AI{% endblock %}
+{% block title %}Analyze a Claim or News URL — TruthLens AI{% endblock %}
 
 {% block content %}
-<div class="container analyze-container">
-  <div class="input-card">
-    <div class="card-header">
-      <div>
-        <h1 class="card-title" style="font-size: 1.6rem;">Analyze a Claim</h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; margin-bottom: 0;">
-          Enter a news claim, headline, or public statement and let TruthLens AI examine it.
-        </p>
+<div class="container container-narrow">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span>Analyze a Claim &bull; Dual-Signal Investigation</span>
       </div>
-      <a href="/history" class="btn btn-secondary btn-sm">View History</a>
+      <h1 class="page-title">Analyze a Claim</h1>
+      <p class="page-subtitle">
+        Analyze a claim and inspect the evidence behind its assessment.
+      </p>
+    </div>
+    
+    <div class="header-actions">
+      <a href="/dashboard" class="btn btn-secondary btn-sm">Dashboard</a>
+      <a href="/history" class="btn btn-secondary btn-sm">History</a>
+    </div>
+  </div>
+
+  <!-- Main Analysis Card Form -->
+  <div class="content-card mb-4">
+    <!-- Mode Selection Tabs -->
+    <div class="mode-tabs">
+      <button 
+        type="button" 
+        id="mode-tab-claim" 
+        class="mode-tab {% if active_mode != 'url' %}active{% endif %}"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>Claim Statement</span>
+      </button>
+
+      <button 
+        type="button" 
+        id="mode-tab-url" 
+        class="mode-tab {% if active_mode == 'url' %}active{% endif %}"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <span>News Article URL</span>
+      </button>
     </div>
 
+    <!-- Alert / Validation Notice with Paste Text Fallback -->
     {% if error %}
     <div class="alert alert-danger" id="validation-error-area" role="alert">
-      <span style="font-size: 1.2rem;">⚠️</span>
-      <div>
-        <strong>Validation Notice:</strong> {{ error }}
+      <div class="alert-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div style="flex: 1;">
+        <div style="margin-bottom: {% if fallback_eligible or active_mode == 'url' %}0.5rem{% else %}0{% endif %};">
+          <strong>{% if error_type == 'server_error' %}System Notice:{% else %}Validation Notice:{% endif %}</strong> {{ error }}
+        </div>
+        {% if fallback_eligible or active_mode == 'url' %}
+        <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem;">
+          <button type="button" class="btn btn-secondary btn-sm" id="fallback-paste-btn" style="background: #FFFFFF; color: var(--text-primary); border: 1px solid var(--border-color);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Paste Article Text Instead</span>
+          </button>
+        </div>
+        {% endif %}
       </div>
     </div>
     {% endif %}
 
     <form action="/analyze" method="POST" id="analyze-form">
-      <label for="claim-text" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.95rem;">
-        Claim Statement or Excerpt:
-      </label>
-      
-      <textarea 
-        id="claim-text" 
-        name="text" 
-        class="claim-textarea" 
-        placeholder="Type or paste a claim to analyze (e.g., 'Scientific consensus confirms that greenhouse gas emissions drive climate change')..."
-        required
-        minlength="5"
-        maxlength="10000"
-      >{{ text or '' }}</textarea>
+      <input type="hidden" name="mode" id="analysis-mode-input" value="{{ active_mode or 'claim' }}">
 
-      <div class="textarea-footer">
-        <span>Minimum 5 characters &bull; Maximum 10,000 characters</span>
-        <span id="char-counter">0 / 10,000 chars</span>
+      <!-- Mode 1: Claim Text Area -->
+      <div id="claim-mode-panel" style="{% if active_mode == 'url' %}display: none;{% endif %}">
+        <div class="form-group">
+          <label for="claim-text" class="form-label">
+            <span>Claim Statement or Excerpt:</span>
+            <span class="form-label-hint">Paste claim or headline to evaluate</span>
+          </label>
+          
+          <textarea 
+            id="claim-text" 
+            name="text" 
+            class="form-textarea" 
+            placeholder="Type or paste a claim to analyze (e.g., 'Scientific consensus confirms that greenhouse gas emissions drive climate change')..."
+            minlength="5"
+            maxlength="10000"
+          >{{ text or '' }}</textarea>
+
+          <div class="textarea-footer">
+            <span class="text-hint">Minimum 5 characters &bull; Maximum 10,000 characters</span>
+            <span id="char-counter" class="char-count">0 / 10,000 chars</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 2: News URL Input -->
+      <div id="url-mode-panel" style="{% if active_mode != 'url' %}display: none;{% endif %}">
+        <div class="form-group">
+          <label for="news-url-input" class="form-label">
+            <span>Public News Article URL:</span>
+            <span class="form-label-hint">Extracts lead claims and article body</span>
+          </label>
+
+          <input 
+            type="url" 
+            id="news-url-input" 
+            name="url" 
+            class="form-input" 
+            placeholder="https://en.wikipedia.org/wiki/Climate_change"
+            value="{{ url or '' }}"
+          >
+
+          <div class="url-security-notice">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>SSRF protected. Only public HTTP/HTTPS URLs are processed. Internal IP ranges are blocked.</span>
+          </div>
+        </div>
       </div>
 
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="clear-btn">
-          <span>Clear Text</span>
+          <span>Clear Input</span>
         </button>
         <button type="submit" class="btn btn-primary" id="analyze-submit-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
           <span>Run Verification Analysis</span>
-          <span>&rarr;</span>
         </button>
       </div>
     </form>
 
-    <!-- Example Claims -->
-    <div class="samples-section">
-      <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-        💡 Click an example claim to populate (will not auto-submit):
+    <!-- Example Claims & Sample URL Pills -->
+    <div class="samples-section" id="samples-claim-section" style="{% if active_mode == 'url' %}display: none;{% endif %}">
+      <div class="samples-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Example claims for testing (click to populate):</span>
       </div>
       <div class="sample-pills">
         <button type="button" class="sample-pill-btn" data-sample="George Washington was the first President of the United States.">
-          🏛️ George Washington Presidency
+          <span>George Washington Presidency</span>
         </button>
         <button type="button" class="sample-pill-btn" data-sample="Scientific studies show that childhood vaccines cause autism in children.">
-          💉 Vaccine & Autism Claim
+          <span>Vaccine & Autism Refuted Claim</span>
         </button>
         <button type="button" class="sample-pill-btn" data-sample="Tennessee students now cover about 67 percent of the cost of their education.">
-          🎓 Higher Education Tuition
+          <span>Higher Education Tuition Claim</span>
         </button>
         <button type="button" class="sample-pill-btn" data-sample="NASA confirmed that astronauts discovered ancient liquid water oceans on Mars.">
-          🚀 Mars Water Discovery
+          <span>Mars Ocean Discovery Claim</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="samples-section" id="samples-url-section" style="{% if active_mode != 'url' %}display: none;{% endif %}">
+      <div class="samples-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Sample public article sources:</span>
+      </div>
+      <div class="sample-pills">
+        <button type="button" class="sample-url-pill-btn" data-sample-url="https://en.wikipedia.org/wiki/Climate_change">
+          <span>Wikipedia: Climate Change</span>
+        </button>
+        <button type="button" class="sample-url-pill-btn" data-sample-url="https://en.wikipedia.org/wiki/James_Webb_Space_Telescope">
+          <span>Wikipedia: Webb Space Telescope</span>
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loading-overlay">
-  <div class="spinner"></div>
-  <div style="text-align: center;">
-    <h3 style="font-size: 1.3rem; margin-bottom: 0.35rem; color: #fff;">Analyzing Claim</h3>
-    <p style="color: var(--accent-glow); font-size: 0.95rem; margin-bottom: 0;">
-      Executing DistilBERT classification, computing Integrated Gradients attributions, and querying live fact archives...
+<!-- Real Pipeline Stages Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay" aria-live="polite" aria-busy="true">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <h3 class="loading-title" id="loading-main-title">Running Verification Pipeline</h3>
+    <p class="loading-subtitle" id="loading-main-subtitle">
+      Processing content, querying live fact-checking sources, evaluating model signals, and synthesizing multi-source assessment...
     </p>
+
+    <!-- Real Backend Stage Indicators -->
+    <div class="loading-stages" id="loading-stages-container">
+      <div class="stage-item active" id="stage-1">
+        <div class="stage-dot"></div>
+        <span id="stage-1-text">1. Validating URL & Network Security</span>
+      </div>
+      <div class="stage-item" id="stage-2">
+        <div class="stage-dot"></div>
+        <span id="stage-2-text">2. Fetching Article Content</span>
+      </div>
+      <div class="stage-item" id="stage-3">
+        <div class="stage-dot"></div>
+        <span id="stage-3-text">3. Extracting Article Text & Metadata</span>
+      </div>
+      <div class="stage-item" id="stage-4">
+        <div class="stage-dot"></div>
+        <span id="stage-4-text">4. Extracting Core Factual Claims</span>
+      </div>
+      <div class="stage-item" id="stage-5">
+        <div class="stage-dot"></div>
+        <span id="stage-5-text">5. Running DistilBERT AI Classification</span>
+      </div>
+      <div class="stage-item" id="stage-6">
+        <div class="stage-dot"></div>
+        <span id="stage-6-text">6. Searching Fact-Check & External Evidence</span>
+      </div>
+      <div class="stage-item" id="stage-7">
+        <div class="stage-dot"></div>
+        <span id="stage-7-text">7. Synthesizing Verification Assessment</span>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -5,7 +5,7 @@ and external verification results.
 """
 import json
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from flask_sqlalchemy import SQLAlchemy
 
 # SQLAlchemy instance - initialized in app.py
@@ -15,6 +15,34 @@ db = SQLAlchemy()
 def utc_now() -> datetime:
     """Return current timezone-aware UTC datetime."""
     return datetime.now(timezone.utc)
+
+
+def format_relative_time(dt: Optional[datetime]) -> str:
+    """Compute human-friendly relative time from real timezone-aware UTC datetime."""
+    if not dt:
+        return "Unknown"
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff_seconds = max(0, int((now - dt).total_seconds()))
+    if diff_seconds < 15:
+        return "Just now"
+    if diff_seconds < 60:
+        return f"{diff_seconds} seconds ago"
+    minutes = diff_seconds // 60
+    if minutes == 1:
+        return "1 minute ago"
+    if minutes < 60:
+        return f"{minutes} minutes ago"
+    hours = minutes // 60
+    if hours == 1:
+        return "1 hour ago"
+    if hours < 24:
+        return f"{hours} hours ago"
+    days = hours // 24
+    if days == 1:
+        return "1 day ago"
+    return f"{days} days ago"
 
 
 class Analysis(db.Model):
@@ -37,6 +65,45 @@ class Analysis(db.Model):
     evidence_sources = db.Column(db.JSON, nullable=True)
     final_assessment = db.Column(db.Text, nullable=True)
     conflict_detected = db.Column(db.Boolean, default=False)
+
+    # News URL analysis metadata
+    source_url = db.Column(db.String(1000), nullable=True)
+    article_title = db.Column(db.String(500), nullable=True)
+
+    def __init__(
+        self,
+        input_text: str = "",
+        predicted_label: str = "",
+        confidence: float = 0.0,
+        verification_status: str = "UNVERIFIED",
+        evidence_status: str = "insufficient",
+        class_probabilities: Optional[Dict[str, Any]] = None,
+        important_phrases: Optional[Any] = None,
+        explanation_summary: Optional[str] = None,
+        evidence_summary: Optional[str] = None,
+        evidence_sources: Optional[Any] = None,
+        final_assessment: Optional[str] = None,
+        conflict_detected: bool = False,
+        source_url: Optional[str] = None,
+        article_title: Optional[str] = None,
+        **kwargs: Any
+    ):
+        self.input_text = input_text
+        self.predicted_label = predicted_label
+        self.confidence = confidence
+        self.verification_status = verification_status
+        self.evidence_status = evidence_status
+        self.class_probabilities = class_probabilities if class_probabilities is not None else {}
+        self.important_phrases = important_phrases
+        self.explanation_summary = explanation_summary
+        self.evidence_summary = evidence_summary
+        self.evidence_sources = evidence_sources
+        self.final_assessment = final_assessment
+        self.conflict_detected = conflict_detected
+        self.source_url = source_url
+        self.article_title = article_title
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     # Backward compatibility properties
     @property
@@ -147,14 +214,27 @@ class Analysis(db.Model):
                         "relation": str(s.get("relation", "unspecified")),
                         "relevance_score": rel,
                         "snippet": str(s.get("snippet", "")),
-                        "url": str(s.get("url", "#"))
+                        "url": str(s.get("url", "#")),
+                        "retrieved_at": str(s.get("retrieved_at", "")),
+                        "retrieved_at_display": str(s.get("retrieved_at_display", "")),
+                        "status": str(s.get("status", "RETRIEVED"))
                     })
+
+        # Count stances dynamically from sources
+        supp_count = sum(1 for s in sources if str(s.get("relation", "")).lower() == "supports")
+        contra_count = sum(1 for s in sources if str(s.get("relation", "")).lower() in ("contradicts", "refutes"))
+        neut_count = sum(1 for s in sources if str(s.get("relation", "")).lower() in ("neutral", "unspecified"))
+
+        # Extract unique queries used across sources
+        queries_used = list(dict.fromkeys([s.get("query_used") for s in sources if s.get("query_used")]))
 
         # Format created_at nicely
         created_str = ""
+        created_relative = ""
         if self.created_at:
             try:
                 created_str = self.created_at.strftime("%Y-%m-%d %H:%M:%S UTC")
+                created_relative = format_relative_time(self.created_at)
             except Exception:
                 created_str = str(self.created_at)
 
@@ -166,10 +246,18 @@ class Analysis(db.Model):
 
         conf_status = "Model prediction" if conf_val >= 0.60 else "Low confidence"
 
+        # Evidence provider name
+        has_wiki = any(s.get("source") == "Wikipedia" for s in sources)
+        provider_name = "Wikipedia (Public API)" if has_wiki or not sources else (sources[0].get("source") or "Wikipedia (Public API)")
+
         return {
             "id": self.id,
             "claim": self.input_text or "",
             "created_at": created_str,
+            "created_at_relative": created_relative,
+            "source_url": self.source_url,
+            "article_title": self.article_title,
+            "search_queries": queries_used,
             "prediction": {
                 "label": self.predicted_label or "Unknown",
                 "confidence": round(conf_val, 4)
@@ -183,7 +271,13 @@ class Analysis(db.Model):
             "evidence": {
                 "status": self.evidence_status or "insufficient",
                 "summary": self.evidence_summary or "External evidence record.",
-                "sources": sources
+                "sources": sources,
+                "supporting_count": supp_count,
+                "contradicting_count": contra_count,
+                "neutral_count": neut_count,
+                "total_retrieved": len(sources),
+                "provider": provider_name,
+                "search_queries": queries_used
             },
             "verification": {
                 "status": self.verification_status or "UNVERIFIED",
@@ -198,13 +292,15 @@ class Analysis(db.Model):
         }
 
     def to_summary_dict(self) -> Dict[str, Any]:
-        """Return a compact summary suitable for history list views."""
+        """Return a compact summary suitable for history and dashboard list views."""
         text = self.input_text or ""
         shortened_claim = text[:90] + ("..." if len(text) > 90 else "")
         created_str = ""
+        created_relative = ""
         if self.created_at:
             try:
                 created_str = self.created_at.strftime("%Y-%m-%d %H:%M UTC")
+                created_relative = format_relative_time(self.created_at)
             except Exception:
                 created_str = str(self.created_at)
 
@@ -217,20 +313,86 @@ class Analysis(db.Model):
         return {
             "id": self.id,
             "created_at": created_str,
+            "created_at_relative": created_relative,
             "claim_short": shortened_claim,
             "claim_full": text,
             "predicted_label": self.predicted_label or "Unknown",
             "confidence": round(conf_val, 4),
             "verification_status": self.verification_status or "UNVERIFIED",
             "evidence_status": self.evidence_status or "insufficient",
-            "conflict_detected": bool(self.conflict_detected)
+            "conflict_detected": bool(self.conflict_detected),
+            "source_url": self.source_url,
+            "article_title": self.article_title
         }
 
 
+def get_analysis(analysis_id: int) -> Optional[Analysis]:
+    """Retrieve a single Analysis record by primary key."""
+    try:
+        return db.session.get(Analysis, int(analysis_id))
+    except (ValueError, TypeError):
+        return None
+
+
+def delete_analysis(analysis_id: int) -> bool:
+    """Safely delete a single Analysis record by primary key.
+    
+    Returns True if found and deleted, False otherwise.
+    Rolls back automatically on failure.
+    """
+    try:
+        rec_id = int(analysis_id)
+    except (ValueError, TypeError):
+        return False
+
+    record = db.session.get(Analysis, rec_id)
+    if not record:
+        return False
+
+    try:
+        db.session.delete(record)
+        db.session.commit()
+        return True
+    except Exception as exc:
+        db.session.rollback()
+        raise exc
+
+
+def clear_history() -> int:
+    """Safely delete all Analysis records without dropping or altering database tables.
+    
+    Returns the number of deleted records.
+    Rolls back automatically on failure.
+    """
+    try:
+        # Count and delete rows cleanly
+        deleted_count = db.session.query(Analysis).delete()
+        db.session.commit()
+        return int(deleted_count)
+    except Exception as exc:
+        db.session.rollback()
+        raise exc
+
+
 def init_db(app=None):
-    """Create tables if they do not exist."""
+    """Create tables if they do not exist and ensure schema migrations."""
+    def _migrate():
+        db.create_all()
+        try:
+            with db.engine.connect() as conn:
+                res = conn.execute(db.text("PRAGMA table_info(analysis)")).fetchall()
+                cols = {r[1] for r in res}
+                if "source_url" not in cols:
+                    conn.execute(db.text("ALTER TABLE analysis ADD COLUMN source_url VARCHAR(1000)"))
+                if "article_title" not in cols:
+                    conn.execute(db.text("ALTER TABLE analysis ADD COLUMN article_title VARCHAR(500)"))
+                conn.commit()
+        except Exception:
+            pass
+
     if app:
         with app.app_context():
-            db.create_all()
+            _migrate()
     else:
-        db.create_all()
+        _migrate()
+

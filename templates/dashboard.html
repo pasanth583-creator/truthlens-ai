@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Dashboard — TruthLens AI{% endblock %}
+
+{% block content %}
+<div class="container dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Live Database Analytics</span>
+      </div>
+      <h1 class="page-title">Verification Dashboard</h1>
+      <p class="page-subtitle">
+        Review submitted claims, model predictions, and evidence-based assessments stored by TruthLens.
+      </p>
+    </div>
+    
+    <div class="header-actions">
+      <a href="/dashboard" class="btn btn-secondary btn-sm" id="dashboard-refresh-btn" title="Refresh metrics from SQLite">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Refresh</span>
+      </a>
+      <a href="/analyze" class="btn btn-primary btn-sm" id="dashboard-new-analysis-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Analysis</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric Cards Grid -->
+  <div class="metrics-grid">
+    <!-- Card 1: Total Claims Analyzed -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Claims Analyzed</span>
+        <span class="metric-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </span>
+      </div>
+      <div class="metric-value" id="stat-total-count">{{ stats.total_count }}</div>
+      <div class="metric-desc">Persisted verification records in SQLite</div>
+    </div>
+
+    <!-- Card 2: Today's Analyses -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Today's Analyses</span>
+        <span class="metric-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </span>
+      </div>
+      <div class="metric-value text-accent" id="stat-today-count">{{ stats.today_count }}</div>
+      <div class="metric-desc">Processed within the current UTC day</div>
+    </div>
+
+    <!-- Card 3: Average Model Confidence -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Average Model Confidence</span>
+        <span class="metric-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="metric-value" id="stat-avg-confidence">
+        {% if stats.total_count > 0 %}
+          {{ stats.average_confidence_pct }}%
+        {% else %}
+          N/A
+        {% endif %}
+      </div>
+      <div class="metric-desc">Mean softmax probability of neural model</div>
+    </div>
+
+    <!-- Card 4: Conflicting Signals -->
+    <div class="metric-card metric-card-warning">
+      <div class="metric-header">
+        <span class="metric-label">Conflicting Signals</span>
+        <span class="metric-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </span>
+      </div>
+      <div class="metric-value text-conflict" id="stat-conflict-count">{{ stats.conflict_count }}</div>
+      <div class="metric-desc">External evidence contradicted model style</div>
+    </div>
+  </div>
+
+  <!-- Verification Breakdown Section -->
+  <div class="content-card mb-4">
+    <div class="card-header-clean">
+      <div>
+        <h2 class="card-title-sm">Verification Breakdown</h2>
+        <p class="card-subtitle-sm">Distribution of veracity classifications and evidence status</p>
+      </div>
+      <span class="badge badge-unverified">{{ stats.total_count }} Total Records</span>
+    </div>
+
+    <div class="breakdown-grid">
+      <!-- Reliable -->
+      <div class="breakdown-card status-reliable">
+        <div class="breakdown-top">
+          <span class="badge badge-reliable">Reliable</span>
+          <span class="breakdown-pct">
+            {% if stats.total_count > 0 %}{{ "%.1f"|format(stats.reliable_count / stats.total_count * 100) }}%{% else %}0%{% endif %}
+          </span>
+        </div>
+        <div class="breakdown-count">{{ stats.reliable_count }}</div>
+        <div class="breakdown-label">Factually verified or standard reporting</div>
+      </div>
+
+      <!-- Misleading -->
+      <div class="breakdown-card status-misleading">
+        <div class="breakdown-top">
+          <span class="badge badge-misleading">Misleading</span>
+          <span class="breakdown-pct">
+            {% if stats.total_count > 0 %}{{ "%.1f"|format(stats.misleading_count / stats.total_count * 100) }}%{% else %}0%{% endif %}
+          </span>
+        </div>
+        <div class="breakdown-count">{{ stats.misleading_count }}</div>
+        <div class="breakdown-label">Selective, exaggerated, or out of context</div>
+      </div>
+
+      <!-- False -->
+      <div class="breakdown-card status-false">
+        <div class="breakdown-top">
+          <span class="badge badge-false">False</span>
+          <span class="breakdown-pct">
+            {% if stats.total_count > 0 %}{{ "%.1f"|format(stats.false_count / stats.total_count * 100) }}%{% else %}0%{% endif %}
+          </span>
+        </div>
+        <div class="breakdown-count">{{ stats.false_count }}</div>
+        <div class="breakdown-label">Refuted assertions or fabricated info</div>
+      </div>
+
+      <!-- Insufficient Evidence -->
+      <div class="breakdown-card status-unverified">
+        <div class="breakdown-top">
+          <span class="badge badge-unverified">Insufficient Evidence</span>
+          <span class="breakdown-pct">
+            {% if stats.total_count > 0 %}{{ "%.1f"|format(stats.insufficient_count / stats.total_count * 100) }}%{% else %}0%{% endif %}
+          </span>
+        </div>
+        <div class="breakdown-count">{{ stats.insufficient_count }}</div>
+        <div class="breakdown-label">No corroborating open-web records found</div>
+      </div>
+
+      <!-- Conflicting Signals -->
+      <div class="breakdown-card status-conflict">
+        <div class="breakdown-top">
+          <span class="badge badge-conflict">Conflicting Signals</span>
+          <span class="breakdown-pct">
+            {% if stats.total_count > 0 %}{{ "%.1f"|format(stats.conflict_count / stats.total_count * 100) }}%{% else %}0%{% endif %}
+          </span>
+        </div>
+        <div class="breakdown-count">{{ stats.conflict_count }}</div>
+        <div class="breakdown-label">Evidence contradicted model linguistic score</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Analysis Table -->
+  <div class="content-card">
+    <div class="card-header-clean">
+      <div>
+        <h2 class="card-title-sm">Recent Analysis Activity</h2>
+        <p class="card-subtitle-sm">Latest verifications processed through the multi-signal engine</p>
+      </div>
+      <a href="/history" class="btn btn-secondary btn-sm">View Full History &rarr;</a>
+    </div>
+
+    {% if stats.recent_analyses and stats.recent_analyses|length > 0 %}
+    <div class="table-responsive">
+      <table class="data-table" id="dashboard-recent-table">
+        <thead>
+          <tr>
+            <th style="width: 140px;">Date & Time</th>
+            <th>Claim / Article</th>
+            <th style="width: 130px;">Model Prediction</th>
+            <th style="width: 100px;">Confidence</th>
+            <th style="width: 160px;">Verification Status</th>
+            <th style="width: 100px; text-align: right;">Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in stats.recent_analyses %}
+          {% set p_lower = item.predicted_label|lower %}
+          <tr>
+            <td class="cell-timestamp">
+              <div class="timestamp-primary">{{ item.created_at_relative }}</div>
+              <div class="timestamp-secondary">{{ item.created_at }}</div>
+            </td>
+            <td>
+              {% if item.article_title %}
+              <div class="table-article-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path></svg>
+                <span>{{ item.article_title }}</span>
+              </div>
+              {% endif %}
+              <div class="table-claim-text" title="{{ item.claim_full }}">
+                "{{ item.claim_short }}"
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-{{ p_lower }}">
+                {{ item.predicted_label }}
+              </span>
+            </td>
+            <td class="cell-confidence">
+              {{ "%.1f"|format(item.confidence * 100) }}%
+            </td>
+            <td>
+              {% if item.conflict_detected %}
+              <span class="badge badge-conflict">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>Conflict</span>
+              </span>
+              {% else %}
+              <span class="badge badge-{{ item.evidence_status|lower }}">
+                {{ item.verification_status }}
+              </span>
+              {% endif %}
+            </td>
+            <td style="text-align: right;">
+              <a href="/result/{{ item.id }}" class="btn btn-secondary btn-xs">
+                <span>View</span>
+                <span>&rarr;</span>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state-container">
+      <div class="empty-state-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3>No analyses yet.</h3>
+      <p>Submit a claim statement or news article URL to populate the intelligence dashboard.</p>
+      <a href="/analyze" class="btn btn-primary btn-sm">
+        <span>Run First Verification</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
